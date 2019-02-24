@@ -40,7 +40,7 @@ everyone else can also install them!
 
 This repo should be treated as the single source of truth for source code,
 therefore we should keep most of it as a library under the `src/` folder, so
-that notebooks (or `ipython`, etc.) can just
+that notebooks (or `ipython`, Colab, etc.) can just do something like
 
 ```python
 from .src.models import MatchingNetworks
