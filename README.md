@@ -52,6 +52,25 @@ on where the code will be run.
 
 ## Sentence and missing words pairs
 
+On the `data/` folder you can find a `train.csv` and `test.csv` files, which
+contain each 9000 labels with 10 examples each and 1000 with 10 examples each
+respectively.
+
+The data is in CSV format with two columns:
+
+- `label` The word acting as label which we need to find.
+- `sentence` The sentence acting as input, where the particular word has been
+  replaced with the token `<blank_token>`.
+
+An example can be seen below:
+
+```csv
+label,sentence
+music,no need to be a hipster to play <blank_token> in vynils
+music,nowadays <blank_token> doesn't sound as before
+...
+```
+
 ### Sampling new pairs
 
 There is a script in the `bin` package which can be used to sample pairs of
