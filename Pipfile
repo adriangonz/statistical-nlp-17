@@ -12,6 +12,8 @@ seaborn = "*"
 numpy = "*"
 torch = "*"
 spacy = "*"
+pytest = "*"
+ipdb = "*"
 
 [requires]
 python_version = "3.6"

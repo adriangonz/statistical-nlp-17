@@ -49,3 +49,37 @@ from .src.models import MatchingNetworks
 This way we avoid fragmentation across notebooks. This is also the most
 platform-agnostic method as it's more generic and doesn't make any assumptions
 on where the code will be run.
+
+## Sentence and missing words pairs
+
+On the `data/` folder you can find a `train.csv` and `test.csv` files, which
+contain each 9000 labels with 10 examples each and 1000 with 10 examples each
+respectively.
+
+The data is in CSV format with two columns:
+
+- `label` The word acting as label which we need to find.
+- `sentence` The sentence acting as input, where the particular word has been
+  replaced with the token `<blank_token>`.
+
+An example can be seen below:
+
+```csv
+label,sentence
+music,no need to be a hipster to play <blank_token> in vynils
+music,nowadays <blank_token> doesn't sound as before
+...
+```
+
+### Sampling new pairs
+
+There is a script in the `bin` package which can be used to sample pairs of
+sentences and missing words out of a WikiText-2 file. Note that the file will be
+processed first, to be as similar as text coming from PTB.
+
+As an example, to sample sample 9000 labels with 10 examples each we would run
+the following
+
+```console
+$ python -m bin.sample -N 9000 -k 10 wikitext-2/wiki.train.tokens data/train.csv
+```
