@@ -50,7 +50,18 @@ This way we avoid fragmentation across notebooks. This is also the most
 platform-agnostic method as it's more generic and doesn't make any assumptions
 on where the code will be run.
 
-## Sentence and missing words pairs
+### Tests
+
+We are using `pytest` for writing and running unit tests. You can see some
+examples on the `test/` folder.
+
+To run all tests, just type on the terminal
+
+```console
+$ pytest -s src/tests
+```
+
+## Dataset
 
 On the `data/` folder you can find a `train.csv` and `test.csv` files, which
 contain each 9000 labels with 10 examples each and 1000 with 10 examples each
