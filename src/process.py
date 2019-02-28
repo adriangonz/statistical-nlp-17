@@ -1,5 +1,6 @@
 import re
 import spacy
+import numpy as np
 
 from spacy.tokens import Token
 
@@ -8,6 +9,8 @@ from .utils import getattrd
 # A title starts and ends with one or more '='
 # e.g. '= = Gameplay = ='
 TITLE_REGEX = re.compile(r'^ (= )+.+( =)+ \n$')
+
+BLANK_TOKEN = "<blank_token>"
 
 
 def read_wikitext_corpus(file_path):
@@ -147,7 +150,7 @@ class EpisodesSampler(object):
                     continue
 
                 # Extract actual text
-                text = getattrd(token, self.attr_name)
+                text = self._get_text(token)
 
                 # If text has already been seen
                 # during this sentence
@@ -163,6 +166,86 @@ class EpisodesSampler(object):
                 # Store pointer to sentence and increase count
                 self._sentences[text].append(sentence)
                 self._sentences_count[text] += 1
+
+    def _get_text(self, token):
+        """
+        Returns the text content of a token
+        following the specified attr_name
+        """
+        return getattrd(token, self.attr_name)
+
+    def sample(self, N, k):
+        """
+        Samples N labels with k example sentences each. On the sentences,
+        the word will get replaced with the token <blank_token>.
+
+        Parameters
+        ---
+        N : int
+            Number of labels to sample.
+        k : int
+            Number of examples to sample per label.
+
+        Returns
+        ---
+        iterator
+            Iterator yielding pairs of label and sentences sampled randomly.
+        """
+        # Find words present on more than k sentences
+        all_labels = [
+            label for label, count in self._sentences_count.items()
+            if count >= k
+        ]
+
+        # Sample N labels
+        all_label_indices = np.arange(len(all_labels))
+        sampled_indices = np.random.choice(
+            all_label_indices, replace=False, size=N)
+
+        # For each sampled label...
+        for label_idx in sampled_indices:
+            label = all_labels[label_idx]
+
+            # Fetch all sentences for the given label
+            all_sentences = self._sentences[label]
+
+            # Sample k sentences out of these
+            all_sentence_indices = np.arange(len(all_sentences))
+            sentence_sampled_indices = np.random.choice(
+                all_sentence_indices, replace=False, size=k)
+
+            # For each sampled sentence...
+            for sentence_idx in sentence_sampled_indices:
+                sentence = all_sentences[sentence_idx]
+                sentence_text = self._get_sentence_text(label, sentence)
+                yield label, sentence_text
+
+    def _get_sentence_text(self, label, sentence):
+        """
+        Generates a sentence's text, replacing the given
+        label for <blank_token>.
+
+        Parameters
+        ----
+        label : str
+            Given label, present in the sentence.
+        sentence : spacy.Span
+            Span of sentence.
+
+        Returns
+        ----
+        str
+            Assembled sentence.
+        """
+        tokens = []
+        for token in sentence:
+            token_text = self._get_text(token)
+            if token_text == label:
+                tokens.append(BLANK_TOKEN)
+            else:
+                tokens.append(token_text)
+
+        return ' '.join(tokens)
 
 
 def is_label(token):
