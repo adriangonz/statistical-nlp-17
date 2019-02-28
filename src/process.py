@@ -1,10 +1,9 @@
 import re
 import spacy
-import numpy as np
 
 from spacy.tokens import Token
 
-from .utils import getattrd
+from .utils import sample_elements, getattrd
 
 # A title starts and ends with one or more '='
 # e.g. '= = Gameplay = ='
@@ -192,31 +191,18 @@ class EpisodesSampler(object):
             Iterator yielding pairs of label and sentences sampled randomly.
         """
         # Find words present on more than k sentences
-        all_labels = [
+        labels = [
             label for label, count in self._sentences_count.items()
             if count >= k
         ]
 
-        # Sample N labels
-        all_label_indices = np.arange(len(all_labels))
-        sampled_indices = np.random.choice(
-            all_label_indices, replace=False, size=N)
-
         # For each sampled label...
-        for label_idx in sampled_indices:
-            label = all_labels[label_idx]
-
+        for label in sample_elements(labels, size=N):
             # Fetch all sentences for the given label
-            all_sentences = self._sentences[label]
-
-            # Sample k sentences out of these
-            all_sentence_indices = np.arange(len(all_sentences))
-            sentence_sampled_indices = np.random.choice(
-                all_sentence_indices, replace=False, size=k)
+            sentences = self._sentences[label]
 
             # For each sampled sentence...
-            for sentence_idx in sentence_sampled_indices:
-                sentence = all_sentences[sentence_idx]
+            for sentence in sample_elements(sentences, size=k):
                 sentence_text = self._get_sentence_text(label, sentence)
                 yield label, sentence_text
 
@@ -240,6 +226,10 @@ class EpisodesSampler(object):
         tokens = []
         for token in sentence:
             token_text = self._get_text(token)
+            if token_text is None:
+                # punctuation marks can be None
+                continue
+
             if token_text == label:
                 tokens.append(BLANK_TOKEN)
             else:
