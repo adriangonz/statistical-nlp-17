@@ -3,6 +3,8 @@ import spacy
 
 from spacy.tokens import Token
 
+from .utils import getattrd
+
 # A title starts and ends with one or more '='
 # e.g. '= = Gameplay = ='
 TITLE_REGEX = re.compile(r'^ (= )+.+( =)+ \n$')
@@ -89,6 +91,72 @@ class PTBTransformer(object):
                 token._.as_ptb = u'N'
 
         return doc
+
+
+class EpisodesSampler(object):
+    """
+    Pipeline component which counts the distribution
+    of tokens over sentences, and then allows to sample words
+    and examples.
+    """
+
+    name = "episodes_sampler"
+
+    def __init__(self, attr_name="as_ptb"):
+        """
+        Initialises internal data structures to count frequency
+        of tokens per sentence.
+
+        Parameters
+        ---
+        attr_name : string
+            Attribute name to where to get the actual text from.
+        """
+        # Sentences will be a dictionary with pointers
+        # to sentences is present.
+        self._sentences = {}
+
+        # Sentences count is computed over self.sentences, with
+        # the counts of sentences of each entry
+        self._sentences_count = {}
+
+        self.attr_name = attr_name
+
+    def __call__(self, doc):
+        """
+        Processes doc's sentences and increases count
+        of each word.
+
+        Parameters
+        ----
+        doc : spacy.Doc
+            Document to process.
+
+        Parameters
+        ----
+        doc : spacy.Doc
+            Unmodified document.
+        """
+        for sentence in doc.sents:
+            seen = set()
+            for token in sentence:
+                # Extract actual text
+                text = getattrd(token, self.attr_name)
+
+                # If token has already been processed,
+                # ignore
+                if token in seen:
+                    continue
+
+                # If text has never been seen before,
+                # initialise array
+                if text not in self._sentences:
+                    self._sentences[text] = []
+                    self._sentences_count[text] = 0
+
+                # Store pointer to sentence and increase count
+                self._sentences[text].append(sentence)
+                self._sentences_count[text] += 1
 
 
 def process_wikitext_corpus(file_path):
