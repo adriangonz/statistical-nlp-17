@@ -21,7 +21,7 @@ def test_ptb_transformer(wiki_doc):
 
 
 def test_episodes_sampler(wiki_doc):
-    sampler = EpisodesSampler(attr_name="text")
+    sampler = EpisodesSampler(attr_name="text", is_label=lambda _: True)
     sampler(wiki_doc)
 
     assert len(sampler._sentences) == 1179
@@ -31,4 +31,4 @@ def test_episodes_sampler(wiki_doc):
 def test_process_wikitext_corpus(wiki_file_path):
     sampler = process_wikitext_corpus(wiki_file_path)
 
-    assert len(sampler._sentences) == 975
+    assert len(sampler._sentences) == 855

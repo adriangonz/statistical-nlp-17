@@ -102,7 +102,7 @@ class EpisodesSampler(object):
 
     name = "episodes_sampler"
 
-    def __init__(self, attr_name="_.as_ptb"):
+    def __init__(self, attr_name, is_label):
         """
         Initialises internal data structures to count frequency
         of tokens per sentence.
@@ -111,6 +111,8 @@ class EpisodesSampler(object):
         ---
         attr_name : string
             Attribute name to where to get the actual text from.
+        is_label : func
+            Function to determine if a token works as label.
         """
         # Sentences will be a dictionary with pointers
         # to sentences is present.
@@ -121,6 +123,7 @@ class EpisodesSampler(object):
         self._sentences_count = {}
 
         self.attr_name = attr_name
+        self.is_label = is_label
 
     def __call__(self, doc):
         """
@@ -140,12 +143,15 @@ class EpisodesSampler(object):
         for sentence in doc.sents:
             seen = set()
             for token in sentence:
+                if not self.is_label(token):
+                    continue
+
                 # Extract actual text
                 text = getattrd(token, self.attr_name)
 
-                # If token has already been processed,
-                # ignore
-                if token in seen:
+                # If text has already been seen
+                # during this sentence
+                if text in seen:
                     continue
 
                 # If text has never been seen before,
@@ -157,6 +163,28 @@ class EpisodesSampler(object):
                 # Store pointer to sentence and increase count
                 self._sentences[text].append(sentence)
                 self._sentences_count[text] += 1
+
+
+def is_label(token):
+    """
+    Logic to decide if a token is or not a valid
+    label, that is if it's not a SYMbol, a NUMber or
+    a stop word.
+
+    Parameters
+    ---
+    token : spacy.Token
+        Input token.
+
+    Returns
+    ---
+    bool
+    """
+    # We only look at tokens which are not
+    # SYM, NUM or stop words
+    invalid_pos = ['NUM', 'PUNCT', 'SYM', 'X', "SPACE"]
+
+    return token.pos_ not in invalid_pos and not token.is_stop
 
 
 def process_wikitext_corpus(file_path):
@@ -173,12 +201,11 @@ def process_wikitext_corpus(file_path):
     sampler : EpisodesSampler
         Sampler which can be used to sample sentences.
     """
-    nlp = spacy.load(
-        'en', disable=['lemmatizer', 'matcher', 'parser', 'tagger', 'ner'])
+    nlp = spacy.load('en', disable=['lemmatizer', 'matcher', 'parser', 'ner'])
     nlp.add_pipe(nlp.create_pipe('sentencizer'), last=True)
     nlp.add_pipe(PTBTransformer(), last=True)
 
-    sampler = EpisodesSampler(attr_name="_.as_ptb")
+    sampler = EpisodesSampler(attr_name="_.as_ptb", is_label=is_label)
     nlp.add_pipe(sampler, last=True)
 
     line_iterator = read_wikitext_corpus(file_path)
