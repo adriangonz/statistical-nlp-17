@@ -29,4 +29,6 @@ def test_episodes_sampler(wiki_doc):
 
 
 def test_process_wikitext_corpus(wiki_file_path):
-    process_wikitext_corpus(wiki_file_path)
+    sampler = process_wikitext_corpus(wiki_file_path)
+
+    assert len(sampler._sentences) == 975

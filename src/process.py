@@ -63,7 +63,7 @@ class PTBTransformer(object):
         """
         Initialise some custom attributes.
         """
-        Token.set_extension("as_ptb", default=None)
+        Token.set_extension("as_ptb", default=None, force=True)
 
     def __call__(self, doc):
         """
@@ -102,7 +102,7 @@ class EpisodesSampler(object):
 
     name = "episodes_sampler"
 
-    def __init__(self, attr_name="as_ptb"):
+    def __init__(self, attr_name="_.as_ptb"):
         """
         Initialises internal data structures to count frequency
         of tokens per sentence.
@@ -170,15 +170,21 @@ def process_wikitext_corpus(file_path):
 
     Returns
     ---
-    list
-        List of processed sentences.
+    sampler : EpisodesSampler
+        Sampler which can be used to sample sentences.
     """
     nlp = spacy.load(
         'en', disable=['lemmatizer', 'matcher', 'parser', 'tagger', 'ner'])
     nlp.add_pipe(nlp.create_pipe('sentencizer'), last=True)
+    nlp.add_pipe(PTBTransformer(), last=True)
+
+    sampler = EpisodesSampler(attr_name="_.as_ptb")
+    nlp.add_pipe(sampler, last=True)
 
     line_iterator = read_wikitext_corpus(file_path)
     nlp_pipe = nlp.pipe(line_iterator, batch_size=50, n_threads=2)
-    for line in nlp_pipe:
-        import ipdb
-        ipdb.set_trace()
+
+    # Process all chunks
+    [doc for doc in nlp_pipe]
+
+    return sampler
