@@ -12,6 +12,7 @@ seaborn = "*"
 numpy = "*"
 torch = "*"
 spacy = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.6"
