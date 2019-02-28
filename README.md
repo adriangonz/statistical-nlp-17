@@ -81,5 +81,5 @@ As an example, to sample sample 9000 labels with 10 examples each we would run
 the following
 
 ```console
-$ python -m bin.sample -N 9000 -k 10 wikitext-2/wiki.train.tokens > train.csv
+$ python -m bin.sample -N 9000 -k 10 wikitext-2/wiki.train.tokens data/train.csv
 ```
