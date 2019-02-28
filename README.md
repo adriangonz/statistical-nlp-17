@@ -49,3 +49,18 @@ from .src.models import MatchingNetworks
 This way we avoid fragmentation across notebooks. This is also the most
 platform-agnostic method as it's more generic and doesn't make any assumptions
 on where the code will be run.
+
+## Sentence and missing words pairs
+
+### Sampling new pairs
+
+There is a script in the `bin` package which can be used to sample pairs of
+sentences and missing words out of a WikiText-2 file. Note that the file will be
+processed first, to be as similar as text coming from PTB.
+
+As an example, to sample sample 9000 labels with 10 examples each we would run
+the following
+
+```console
+$ python -m bin.sample -N 9000 -k 10 wikitext-2/wiki.train.tokens > train.csv
+```
