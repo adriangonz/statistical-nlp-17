@@ -88,9 +88,9 @@ There is a script in the `bin` package which can be used to sample pairs of
 sentences and missing words out of a WikiText-2 file. Note that the file will be
 processed first, to be as similar as text coming from PTB.
 
-As an example, to sample sample 9000 labels with 10 examples each we would run
-the following
+As an example, to resample the entire dataset, we can just run:
 
 ```console
 $ python -m bin.sample -N 9000 -k 10 wikitext-2/wiki.train.tokens data/train.csv
+$ python -m bin.sample -N 1000 -k 10 wikitext-2/wiki.test.tokens data/test.csv
 ```

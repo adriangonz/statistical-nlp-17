@@ -224,16 +224,29 @@ class EpisodesSampler(object):
             Assembled sentence.
         """
         tokens = []
+        label_indices = []
         for token in sentence:
             token_text = self._get_text(token)
             if token_text is None:
-                # punctuation marks can be None
+                # Punctuation marks can be None
                 continue
 
             if token_text == label:
-                tokens.append(BLANK_TOKEN)
-            else:
-                tokens.append(token_text)
+                label_indices.append(len(tokens))
+
+            tokens.append(token_text)
+
+        # Replace label with <blank_token>
+        if len(label_indices) == 0:
+            raise ValueError(f"Sentence doesn't contain label '{label}'")
+
+        label_index = label_indices[0]
+        if len(label_indices) > 1:
+            # If the label is present on more than one
+            # location, decide randomly which to replace
+            label_index = sample_elements(label_indices, size=1)[0]
+
+        tokens[label_index] = BLANK_TOKEN
 
         return ' '.join(tokens)
 
