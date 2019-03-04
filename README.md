@@ -4,7 +4,7 @@ This is the repository for Group 17 of the Statistical Natural Language
 Processing module at UCL, formed by:
 
 - Talip Ucar
-- Adrian Swarzc
+- Adrian Szwarc
 - Matt Lee
 - Adrian Gonzalez-Martin
 
