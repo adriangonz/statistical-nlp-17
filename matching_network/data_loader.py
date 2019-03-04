@@ -89,7 +89,13 @@ class OmniglotNShotDataset():
         #print(target_x.shape)
         #print(target_y.shape)
 
-        # THIS SHOULD NOT NEED TO BE CHANGED
+        # THIS WILL NEED TO BE CHANGED
+        # THERE ARE NO EXPLICIT LABELS FOR THE OMNIGLOT DATA
+        # THEY SIMPLY KNOW THAT DATA IN THE SAME 0TH INDEX OF THE INPUT DATA
+        # EG IN THE SAME data_pack.shape[0] ARE OFF THE SAME CLASS AND SO
+        # WILL HAVE THE SAME LABEL, AND THIS CLASS IS GIVEN A NUMBER FOR A
+        # LABEL HERE
+        # QUESTION, HOW DO WE AVOID CLASSES BEING GIVEN THE SAME NUMBER FOR A LABEL?
         for i in range(self.batch_size):
             classes_idx = np.arange(data_pack.shape[0])
             samples_idx = np.arange(data_pack.shape[1])
