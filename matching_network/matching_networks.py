@@ -15,52 +15,52 @@ import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-# Won't need this
-def convLayer(in_channels, out_channels, keep_prob=0.0):
-    """3*3 convolution with padding,ever time call it the output size become half"""
-    cnn_seq = nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, 3, 1, 1),
-        nn.ReLU(True),
-        nn.BatchNorm2d(out_channels),
-        nn.MaxPool2d(kernel_size=2, stride=2),
-        nn.Dropout(keep_prob)
-    )
-    return cnn_seq
+# WON'T NEED THIS
+# def convLayer(in_channels, out_channels, keep_prob=0.0):
+    # """3*3 convolution with padding,ever time call it the output size become half"""
+    # cnn_seq = nn.Sequential(
+        # nn.Conv2d(in_channels, out_channels, 3, 1, 1),
+        # nn.ReLU(True),
+        # nn.BatchNorm2d(out_channels),
+        # nn.MaxPool2d(kernel_size=2, stride=2),
+        # nn.Dropout(keep_prob)
+    # )
+    # return cnn_seq
 
-# This is what generates the image embeddings.
-# Will need to change to simple word embeddings
-class Classifier(nn.Module):
-    def __init__(self, layer_size=64, num_channels=1, keep_prob=1.0, image_size=28):
-        super(Classifier, self).__init__()
-        """
-        Build a CNN to produce embeddings
-        :param layer_size:64(default)
-        :param num_channels:
-        :param keep_prob:
-        :param image_size:
-        """
-        self.layer1 = convLayer(num_channels, layer_size, keep_prob)
-        self.layer2 = convLayer(layer_size, layer_size, keep_prob)
-        self.layer3 = convLayer(layer_size, layer_size, keep_prob)
-        self.layer4 = convLayer(layer_size, layer_size, keep_prob)
+# THIS IS WHAT GENERATES THE IMAGE EMBEDDINGS.
+# WILL NEED TO CHANGE TO SIMPLE WORD EMBEDDINGS
+# class Classifier(nn.Module):
+    # def __init__(self, layer_size=64, num_channels=1, keep_prob=1.0, image_size=28):
+        # super(Classifier, self).__init__()
+        # """
+        # Build a CNN to produce embeddings
+        # :param layer_size:64(default)
+        # :param num_channels:
+        # :param keep_prob:
+        # :param image_size:
+        # """
+        # self.layer1 = convLayer(num_channels, layer_size, keep_prob)
+        # self.layer2 = convLayer(layer_size, layer_size, keep_prob)
+        # self.layer3 = convLayer(layer_size, layer_size, keep_prob)
+        # self.layer4 = convLayer(layer_size, layer_size, keep_prob)
 
-        finalSize = int(math.floor(image_size / (2 * 2 * 2 * 2)))
-        self.outSize = finalSize * finalSize * layer_size
+        # finalSize = int(math.floor(image_size / (2 * 2 * 2 * 2)))
+        # self.outSize = finalSize * finalSize * layer_size
 
-    def forward(self, image_input):
-        """
-        Use CNN defined above
-        :param image_input:
-        :return:
-        """
-        x = self.layer1(image_input)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = x.view(x.size()[0], -1)
-        return x
+    # def forward(self, image_input):
+        # """
+        # Use CNN defined above
+        # :param image_input:
+        # :return:
+        # """
+        # x = self.layer1(image_input)
+        # x = self.layer2(x)
+        # x = self.layer3(x)
+        # x = self.layer4(x)
+        # x = x.view(x.size()[0], -1)
+        # return x
 
-# Should not need to change
+# SHOULD NOT NEED TO CHANGE
 class AttentionalClassify(nn.Module):
     def __init__(self):
         super(AttentionalClassify, self).__init__()
@@ -77,7 +77,7 @@ class AttentionalClassify(nn.Module):
         preds = softmax_similarities.unsqueeze(1).bmm(support_set_y).squeeze()
         return preds
 
-# Should not need to change
+# SHOULD NOT NEED TO CHANGE, UNLESS WE WANT TO CHANGE THE DISTANCE
 class DistanceNetwork(nn.Module):
     """
     This model calculates the cosine distance between each of the support set embeddings and the target image embeddings.
@@ -104,7 +104,7 @@ class DistanceNetwork(nn.Module):
         similarities = torch.stack(similarities)
         return similarities.t()
 
-# Should not need to change
+# SHOULD NOT NEED TO CHANGE
 class BidirectionalLSTM(nn.Module):
     def __init__(self, layer_size, batch_size, vector_dim,use_cuda):
         super(BidirectionalLSTM, self).__init__()
@@ -162,13 +162,13 @@ class MatchingNetwork(nn.Module):
         super(MatchingNetwork, self).__init__()
         self.batch_size = batch_size
         self.keep_prob = keep_prob
-        # Change/delete this
+        # CHANGE/DELETE THIS
         self.num_channels = num_channels
         self.learning_rate = learning_rate
         self.fce = fce
         self.num_classes_per_set = num_classes_per_set
         self.num_samples_per_class = num_samples_per_class
-        # Change/delete this
+        # CHANGE/DELETE THIS
         self.image_size = image_size
         self.g = Classifier(layer_size=64, num_channels=num_channels, keep_prob=keep_prob, image_size=image_size)
         self.dn = DistanceNetwork()
@@ -185,6 +185,8 @@ class MatchingNetwork(nn.Module):
         :param target_y:
         :return:
         """
+        # THESE PRINT STATEMENTS WERE JUST FOR ME TO CHECK 
+        # THE DIMENSIONS OF THE IMAGES HERE
         #print("In MN")
         #print(support_set_images.shape)
         #print(support_set_y_one_hot.shape)

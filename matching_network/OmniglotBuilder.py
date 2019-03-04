@@ -46,13 +46,13 @@ class OmniglotBuilder:
         self.keep_prob = keep_prob
         self.batch_size = batch_size
         self.lr = lr
-        self.image_size = image_size # Need to change this
+        self.image_size = image_size # NEED TO CHANGE THIS
         self.optim = optim
         self.wd = weight_decay
-        # I don't seem to need to change anything RE CUDA. I think PyTorch works out if I have that version or not
+        # I DON'T SEEM TO NEED TO CHANGE ANYTHING RE CUDA. I THINK PYTORCH WORKS OUT IF I HAVE THAT VERSION OR NOT
         self.isCuadAvailable = torch.cuda.is_available() 
         self.use_cuda = use_cuda
-        # Need to change what's passed to MatchingNetwork, eg not channels or image size
+        # NEED TO CHANGE WHAT'S PASSED TO MATCHINGNETWORK, EG NOT CHANNELS OR IMAGE SIZE
         self.matchNet = MatchingNetwork(keep_prob, batch_size, num_channels, self.lr, fce, classes_per_set,
                                         samples_per_class, image_size, self.isCuadAvailable & self.use_cuda)
         self.total_iter = 0
@@ -83,7 +83,7 @@ class OmniglotBuilder:
                 y_target = Variable(torch.from_numpy(y_target), requires_grad=False).squeeze().long()
 
                 # convert to one hot encoding
-                # think it's still fine to do this, but change the way it's done
+                # THINK IT'S STILL FINE TO DO THIS, BUT CHANGE THE WAY IT'S DONE
                 y_support_set = y_support_set.unsqueeze(2)
                 sequence_length = y_support_set.size()[1]
                 batch_size = y_support_set.size()[0]
@@ -91,9 +91,9 @@ class OmniglotBuilder:
                     torch.zeros(batch_size, sequence_length, self.classes_per_set).scatter_(2,
                                                                                             y_support_set.data,
                                                                                             1), requires_grad=False)
-
+                
+                # THIS NEEDS TO BE CHANGED
                 # reshape channels and change order
-                # This needs to be changed
                 size = x_support_set.size()
                 x_support_set = x_support_set.permute(0, 1, 4, 2, 3)
                 x_target = x_target.permute(0, 3, 1, 2)
@@ -121,7 +121,7 @@ class OmniglotBuilder:
             total_accuracy = total_accuracy / total_train_batches
             return total_c_loss, total_accuracy
 
-    # Nothing to change
+    # NOTHING TO CHANGE
     def _create_optimizer(self, model, lr):
         # setup optimizer
         if self.optim == "adam":
@@ -132,7 +132,7 @@ class OmniglotBuilder:
             raise Exception("Not a valid optimizer offered: {0}".format(self.optim))
         return optimizer
 
-    # Nothing to change
+    # NOTHING TO CHANGE
     def _adjust_learning_rate(self, optimizer):
         """
         Update the learning rate after some epochs
@@ -140,7 +140,7 @@ class OmniglotBuilder:
         :return:
         """
 
-    # Same changes as run_training_epoch
+    # SAME CHANGES AS RUN_TRAINING_EPOCH
     def run_val_epoch(self, total_val_batches):
         """
         Run the training epoch
@@ -191,7 +191,7 @@ class OmniglotBuilder:
             self.scheduler.step(total_c_loss)
             return total_c_loss, total_accuracy
 
-    # Same issues as train and val epochs
+    # SAME ISSUES AS TRAIN AND VAL EPOCHS
     def run_test_epoch(self, total_test_batches):
         """
         Run the training epoch

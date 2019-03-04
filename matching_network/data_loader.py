@@ -23,23 +23,24 @@ class OmniglotNShotDataset():
         :param use_cache: if true,cache dataset to memory.It can speedup the train but require larger memory
         """
         np.random.seed(seed)
-        # We need to load in CSV files and convert them to something, maybe np.array of dtype=object
+        # WE NEED TO LOAD IN CSV FILES AND CONVERT THEM TO SOMETHING, MAYBE NP.ARRAY OF DTYPE=OBJECT
         # https://stackoverflow.com/questions/14639496/python-numpy-array-of-arbitrary-length-strings
         self.x = np.load('data/data.npy') 
         #print(self.x.shape)
-        # Reshaping from (1623, 20, 28, 28) to (1623, 20, 28, 28, 1)
-        # We won't need to do this, but note how the data is organized by
-        # Number of classes, number of instances of each class, shape of data
-        # We still want something like that
+        # RESHAPING FROM (1623, 20, 28, 28) TO (1623, 20, 28, 28, 1)
+        # WE WON'T NEED TO DO THIS, BUT NOTE HOW THE DATA IS ORGANIZED BY
+        # NUMBER OF CLASSES, NUMBER OF INSTANCES OF EACH CLASS, SHAPE OF DATA
+        # WE STILL WANT SOMETHING LIKE THAT
         self.x = np.reshape(self.x, newshape=(self.x.shape[0], self.x.shape[1], 28, 28, 1))
+        # PRINT STATEMENT FOR ME TO CHECK DIMENSIONS
         #print(self.x.shape)
-        # Shuffles within the classes, not between them
+        # SHUFFLES WITHIN THE CLASSES, NOT BETWEEN THEM
         if shuffle:
             np.random.shuffle(self.x)
-        # Need to modify this for our own splits
+        # NEED TO MODIFY THIS FOR OUR OWN SPLITS
         self.x_train, self.x_val, self.x_test = self.x[:1200], self.x[1200:1411], self.x[1411:]
         # self.mean = np.mean(list(self.x_train) + list(self.x_val))
-        # We won't need to do this either for sentences eg normalize them here
+        # WE WON'T NECESSARILY NEED TO DO THIS - DEPENDS HOW WE LOAD IN DATA FROM CSV
         self.x_train = self.processes_batch(self.x_train, np.mean(self.x_train), np.std(self.x_train))
         self.x_test = self.processes_batch(self.x_test, np.mean(self.x_test), np.std(self.x_test))
         self.x_val = self.processes_batch(self.x_val, np.mean(self.x_val), np.std(self.x_val))
@@ -48,8 +49,6 @@ class OmniglotNShotDataset():
         self.n_classes = self.x.shape[0]
         self.classes_per_set = classes_per_set
         self.samples_per_class = samples_per_class
-        # Next line used below for _get_batch_from_cache(self, dataset_name)
-        # Not sure where this line is applied
         self.indexes = {"train": 0, "val": 0, "test": 0}
         self.datatset = {"train": self.x_train, "val": self.x_val, "test": self.x_test}
         self.use_cache = use_cache
@@ -58,6 +57,7 @@ class OmniglotNShotDataset():
                                     "val": self.load_data_cache(self.x_val),
                                     "test": self.load_data_cache(self.x_test)}
 
+    # DON'T NECESSARILY NEED THIS
     def processes_batch(self, x_batch, mean, std):
         """
         Normalizes a batch images
@@ -72,22 +72,24 @@ class OmniglotNShotDataset():
         :param data_pack: one of(train,test,val) dataset shape[classes_num,20,28,28,1]
         :return: A list with [support_set_x,support_set_y,target_x,target_y] ready to be fed to our networks
         """
-        # Shape of data_pack = (1200,20,28,28,1), which is Number of (classes in training, num examples per class, image dim)
+        # SHAPE OF DATA_PACK = (1200,20,28,28,1), WHICH IS NUMBER OF (CLASSES IN TRAINING, NUM EXAMPLES PER CLASS, IMAGE DIM)
+        # PRINT STATEMENT FOR ME TO CHECK DIMENSIONS
         #print(data_pack.shape)
-        # Will need to change the last two dims here (data_pack.shape[3], data_pack.shape[4]) which are the image dims
-        # Similarly where these crop up below
+        # WILL NEED TO CHANGE THE LAST TWO DIMS HERE (DATA_PACK.SHAPE[3], DATA_PACK.SHAPE[4]) WHICH ARE THE IMAGE DIMS
+        # SIMILARLY WHERE THESE CROP UP BELOW
         support_set_x = np.zeros((self.batch_size, self.classes_per_set, self.samples_per_class, data_pack.shape[2],
                                   data_pack.shape[3], data_pack.shape[4]), np.float32)
 
         support_set_y = np.zeros((self.batch_size, self.classes_per_set, self.samples_per_class), np.int32)
         target_x = np.zeros((self.batch_size, data_pack.shape[2], data_pack.shape[3], data_pack.shape[4]), np.float32)
         target_y = np.zeros((self.batch_size, 1), np.int32)
+        # PRINT STATEMENT FOR ME TO CHECK DIMENSIONS
         #print(support_set_x.shape)
         #print(support_set_y.shape)
         #print(target_x.shape)
         #print(target_y.shape)
 
-        # This should not need to be changed
+        # THIS SHOULD NOT NEED TO BE CHANGED
         for i in range(self.batch_size):
             classes_idx = np.arange(data_pack.shape[0])
             samples_idx = np.arange(data_pack.shape[1])
@@ -105,7 +107,7 @@ class OmniglotNShotDataset():
 
         return support_set_x, support_set_y, target_x, target_y
 
-    # We don't need to do this
+    # WE DON'T NEED TO DO THIS
     def _rotate_data(self, image, k):
         """
         Rotates one image by self.k * 90 degrees counter-clockwise
@@ -114,7 +116,7 @@ class OmniglotNShotDataset():
         """
         return np.rot90(image, k)
 
-    #We don't need to do this
+    #WE DON'T NEED TO DO THIS
     def _rotate_batch(self, batch_images, k):
         """
         Rotates a whole image batch
@@ -127,6 +129,7 @@ class OmniglotNShotDataset():
             batch_images[i] = self._rotate_data(batch_images[i], k)
         return batch_images
 
+    # DON'T THINK WE'LL BE ROTATING ANYTHING
     def _get_batch(self, dataset_name, augment=False):
         """
         Get next batch from the dataset with name.
@@ -153,13 +156,13 @@ class OmniglotNShotDataset():
                 a_target_x.append(temp_target_x)
             support_set_x = np.array(a_support_set_x)
             target_x = np.array(a_target_x)
-        # Need to change this and next line. Reshaping not necessery
+        # NEED TO CHANGE THIS AND NEXT LINE. RESHAPING NOT NECESSERY
         support_set_x = support_set_x.reshape((support_set_x.shape[0], support_set_x.shape[1] * support_set_x.shape[2],
                                                support_set_x.shape[3], support_set_x.shape[4], support_set_x.shape[5]))
         support_set_y = support_set_y.reshape(support_set_y.shape[0], support_set_y.shape[1] * support_set_y.shape[2])
         return support_set_x, support_set_y, target_x, target_y
 
-    # Next three functions should not need to be changed
+    # NEXT THREE FUNCTIONS SHOULD NOT NEED TO BE CHANGED
     def get_train_batch(self, augment=False):
         return self._get_batch("train", augment)
 
@@ -180,7 +183,7 @@ class OmniglotNShotDataset():
         classes_idx = np.arange(data_pack.shape[0])
         samples_idx = np.arange(data_pack.shape[1])
         for _ in range(1000):
-            # This and next line needs to eb changed
+            # THIS AND NEXT LINE NEEDS TO BE CHANGED
             support_set_x = np.zeros((self.batch_size, self.classes_per_set, self.samples_per_class, data_pack.shape[2],
                                       data_pack.shape[3], data_pack.shape[4]), np.float32)
 
@@ -193,7 +196,7 @@ class OmniglotNShotDataset():
                 choose_label = np.random.choice(self.classes_per_set, size=1)
                 choose_samples = np.random.choice(samples_idx, size=self.samples_per_class + 1, replace=False)
 
-                # Some changes in these lines
+                # SOME CHANGES IN THESE LINES
                 x_temp = data_pack[choose_classes]
                 x_temp = x_temp[:, choose_samples]
                 y_temp = np.arange(self.classes_per_set)
@@ -204,7 +207,7 @@ class OmniglotNShotDataset():
             cached_dataset.append([support_set_x, support_set_y, target_x, target_y])
         return cached_dataset
 
-    # I think this is fine
+    # I THINK THIS IS FINE
     def _get_batch_from_cache(self, dataset_name):
         """
         :param dataset_name:
