@@ -35,7 +35,7 @@ class OmniglotNShotDataset():
         if shuffle:
             np.random.shuffle(self.x)
 
-        self.x_train, self.x_val = self.x[:7000], self.x[7000:]]
+        self.x_train, self.x_val = self.x[:7000], self.x[7000:]
 
         self.batch_size = batch_size
         self.n_classes = self.x.shape[0]
