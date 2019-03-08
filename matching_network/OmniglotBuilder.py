@@ -25,7 +25,7 @@ class OmniglotBuilder:
         """
         self.data = data
 
-    def build_experiment(self, batch_size, num_channels, lr, image_size, classes_per_set, samples_per_class, keep_prob,
+    def build_experiment(self, batch_size, num_channels, lr, vocab_length, classes_per_set, samples_per_class, keep_prob,
                          fce, optim, weight_decay, use_cuda):
         """
         :param batch_size:
@@ -46,7 +46,7 @@ class OmniglotBuilder:
         self.keep_prob = keep_prob
         self.batch_size = batch_size
         self.lr = lr
-        self.image_size = image_size # NEED TO CHANGE THIS
+        self.vocab_length = vocab_length # NEED TO CHANGE THIS
         self.optim = optim
         self.wd = weight_decay
         # I DON'T SEEM TO NEED TO CHANGE ANYTHING RE CUDA. I THINK PYTORCH WORKS OUT IF I HAVE THAT VERSION OR NOT
@@ -54,7 +54,7 @@ class OmniglotBuilder:
         self.use_cuda = use_cuda
         # NEED TO CHANGE WHAT'S PASSED TO MATCHINGNETWORK, EG NOT CHANNELS OR IMAGE SIZE
         self.matchNet = MatchingNetwork(keep_prob, batch_size, num_channels, self.lr, fce, classes_per_set,
-                                        samples_per_class, image_size, self.isCuadAvailable & self.use_cuda)
+                                        samples_per_class, vocab_length, self.isCuadAvailable & self.use_cuda)
         self.total_iter = 0
         if self.isCuadAvailable & self.use_cuda:
             cudnn.benchmark = True  # set True to speedup

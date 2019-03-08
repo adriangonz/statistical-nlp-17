@@ -25,17 +25,19 @@ class OmniglotNShotDataset():
         np.random.seed(seed)
 
         # WE NEED TO LOAD IN CSV FILES AND CONVERT THEM TO SOMETHING, MAYBE NP.ARRAY OF DTYPE=OBJECT
-        self.x = np.load('data/x_train.csv')
-        self.x_test = np.load('data/x_test.csv')
+        self.x = np.load('data/X_train_sentences.npy')
+        print(self.x.shape)
+        #self.x_test = np.load('data/x_test.csv')
 
         # RESHAPING FROM (1623, 20, 28, 28) TO (1623, 20, 28, 28, 1)
-        self.x = np.reshape(self.x, newshape=(self.x.shape[0], self.x.shape[1], self.x.shape[2], self.x.shape[3], 1))
+        self.x = np.reshape(self.x, newshape=(self.x.shape[0], self.x.shape[1], self.x.shape[2], 1))
 
         # SHUFFLES WITHIN THE CLASSES, NOT BETWEEN THEM
         if shuffle:
             np.random.shuffle(self.x)
 
-        self.x_train, self.x_val = self.x[:7000], self.x[7000:]
+        # self.x_train, self.x_val = self.x[:7000], self.x[7000:]
+        self.x_train, self.x_val, self.x_test = self.x[:7000], self.x[7000:8000], self.x[8000:9000]
 
         self.batch_size = batch_size
         self.n_classes = self.x.shape[0]
