@@ -30,7 +30,6 @@ class SentenceEncoder(nn.Module):
         return output
         
         
-        
 # SHOULD NOT NEED TO CHANGE
 class AttentionalClassify(nn.Module):
     def __init__(self):
@@ -141,7 +140,7 @@ class MatchingNetwork(nn.Module):
         self.num_samples_per_class = num_samples_per_class
         # CHANGE/DELETE THIS
         self.image_size = image_size
-        self.g = Classifier(layer_size=64, num_channels=num_channels, keep_prob=keep_prob, image_size=image_size)
+        self.g = SentenceEncoder(vocab_length, layer_size=64)
         self.dn = DistanceNetwork()
         self.classify = AttentionalClassify()
         if self.fce:
