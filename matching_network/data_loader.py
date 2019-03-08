@@ -32,7 +32,7 @@ class OmniglotNShotDataset():
         self.x = np.reshape(self.x, newshape=(self.x.shape[0], self.x.shape[1], self.x.shape[2], self.x.shape[3], 1))
 
         # SHUFFLES WITHIN THE CLASSES, NOT BETWEEN THEM
-        if shuffle:
+        if shuffle:87
             np.random.shuffle(self.x)
 
         self.x_train, self.x_val = self.x[:7000], self.x[7000:]
