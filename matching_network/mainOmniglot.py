@@ -7,11 +7,12 @@
 # @Time    :17-8-29 22:26
 # @FILE    :mainOmniglot.py
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+from typing import Any, Union
 
 from data_loader import OmniglotNShotDataset
 from OmniglotBuilder import OmniglotBuilder
 import tqdm
+import numpy as np
 
 # Experiment setup
 batch_size = 10
@@ -28,8 +29,15 @@ best_val_acc = 0.0
 
 data = OmniglotNShotDataset(batch_size=batch_size, classes_per_set=classes_per_set,
                             samples_per_class=samples_per_class, seed=2017, shuffle=True, use_cache=False)
+
+# Vocab
+vocab_length = 27449
+# print(type(data))
+# vocab_length = int(np.amax(data))+1  # type: Union[int, Any]
+# print(vocab_length)
+
 obj_oneShotBuilder = OmniglotBuilder(data)
-obj_oneShotBuilder.build_experiment(batch_size=batch_size, num_channels=1, lr=1e-3, image_size=28, classes_per_set=20,
+obj_oneShotBuilder.build_experiment(batch_size=batch_size, num_channels=1, lr=1e-3, vocab_length=vocab_length, classes_per_set=20,
                                     samples_per_class=1, keep_prob=0.0, fce=True, optim="adam", weight_decay=0,
                                     use_cuda=True)
 

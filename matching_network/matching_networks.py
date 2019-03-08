@@ -19,10 +19,27 @@ from torch.autograd import Variable
          
 class SentenceEncoder(nn.Module):
     def __init__(self, vocab_length, layer_size=64):
+        super(SentenceEncoder, self).__init__()
         self.vocab_length = vocab_length
         self.layer_size = layer_size
+        self.outSize = layer_size
         # Linear layer 
-        self.layer1 = nn.Linear(len(self.vocab_length), self.layer_size)
+        self.layer1 = nn.Linear(self.vocab_length, self.layer_size)
+
+
+    def oneHotEncoder(self, set):
+        active_tokens_mask = (set != 1)
+        filtered = active_tokens_mask * set
+
+        set_onehot = np.zeros((int(self.vocab_length),set.shape[1]))
+
+        for c in range(len(set[1])):
+            max_pool = np.zeros((int(self.vocab_length)))
+            max_pool[filtered[:,c]] = 1
+            max_pool[0]=0
+            set_onehot[:,c] = max_pool
+        
+        return set_onehot
 
     def forward(self, sentence):
         # Sentence shape= 1 x vocab_length
@@ -114,10 +131,9 @@ class BidirectionalLSTM(nn.Module):
         output, self.hidden = self.lstm(inputs, self.hidden)
         return output
 
-
 class MatchingNetwork(nn.Module):
     def __init__(self, keep_prob, batch_size=32, num_channels=1, learning_rate=1e-3, fce=False, num_classes_per_set=20, \
-                 num_samples_per_class=1, image_size=28, use_cuda=True):
+                 num_samples_per_class=1, vocab_length=20000, use_cuda=True):
         """
         This is our main network
         :param keep_prob: dropout rate
@@ -139,7 +155,6 @@ class MatchingNetwork(nn.Module):
         self.num_classes_per_set = num_classes_per_set
         self.num_samples_per_class = num_samples_per_class
         # CHANGE/DELETE THIS
-        self.image_size = image_size
         self.g = SentenceEncoder(vocab_length, layer_size=64)
         self.dn = DistanceNetwork()
         self.classify = AttentionalClassify()
@@ -163,11 +178,13 @@ class MatchingNetwork(nn.Module):
         
         # produce embeddings for support set images
         encoded_images = []
+        support_set_images = oneHotEncoder(support_set_images)
         for i in np.arange(support_set_images.size(1)):
             gen_encode = self.g(support_set_images[:, i, :, :])
             encoded_images.append(gen_encode)
 
         # produce embeddings for target images
+        target_image = oneHotEncoder(target_image)
         gen_encode = self.g(target_image)
         encoded_images.append(gen_encode)
         output = torch.stack(encoded_images)
