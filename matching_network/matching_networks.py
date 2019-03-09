@@ -29,8 +29,12 @@ class SentenceEncoder(nn.Module):
 
     def oneHotEncoder(self, set):
         active_tokens_mask = (set != 1)
-        filtered = active_tokens_mask * set
+        #print(set)
+        #print(active_tokens_mask)
+        filtered = active_tokens_mask * set.type('torch.ByteTensor')
 
+        print(set.shape)
+        print("fgfg")
         set_onehot = np.zeros((int(self.vocab_length),set.shape[1]))
 
         for c in range(len(set[1])):
@@ -41,9 +45,11 @@ class SentenceEncoder(nn.Module):
         
         return set_onehot
 
-    def forward(self, sentence):
+    def encode(self, sentence_set):
         # Sentence shape= 1 x vocab_length
-        output = self.layer1(sentence)
+        sentence_set_onehot = self.oneHotEncoder(sentence_set)
+        print(type(Variable(torch.from_numpy(sentence_set_onehot))))
+        output = self.layer1(Variable(torch.from_numpy(sentence_set_onehot.transpose())).type('torch.FloatTensor'))
         return output
         
         
@@ -127,13 +133,14 @@ class BidirectionalLSTM(nn.Module):
 
     def forward(self, inputs):
         # self.hidden = self.init_hidden(self.use_cuda)
-        self.hidden = self.repackage_hidden(self.hidden)
+        #self.hidden = self.repackage_hidden(self.hidden)
+        print(self.hidden)
         output, self.hidden = self.lstm(inputs, self.hidden)
         return output
 
 class MatchingNetwork(nn.Module):
     def __init__(self, keep_prob, batch_size=32, num_channels=1, learning_rate=1e-3, fce=False, num_classes_per_set=20, \
-                 num_samples_per_class=1, vocab_length=20000, use_cuda=True):
+                 num_samples_per_class=1, vocab_length=25000, use_cuda=True):
         """
         This is our main network
         :param keep_prob: dropout rate
@@ -178,19 +185,25 @@ class MatchingNetwork(nn.Module):
         
         # produce embeddings for support set images
         encoded_images = []
-        support_set_images = oneHotEncoder(support_set_images)
-        for i in np.arange(support_set_images.size(1)):
-            gen_encode = self.g(support_set_images[:, i, :, :])
+        print(support_set_images.shape)
+        print("rrrrr")
+        for i in np.arange(support_set_images.shape[1]):
+            print(support_set_images.shape)
+            print("rr111")
+            sentence = support_set_images[0, i, 0, :].reshape(-1,1)
+            print(sentence.shape)
+            gen_encode = self.g.encode(sentence)
             encoded_images.append(gen_encode)
 
         # produce embeddings for target images
-        target_image = oneHotEncoder(target_image)
-        gen_encode = self.g(target_image)
-        encoded_images.append(gen_encode)
+
+        target_image = self.g.encode(target_image[0].reshape(-1,1))
+        encoded_images.append(target_image)
         output = torch.stack(encoded_images)
 
         # use fce?
         if self.fce:
+            print(output.shape)
             outputs = self.lstm(output)
 
         # get similarities between support set embeddings and target
@@ -200,8 +213,14 @@ class MatchingNetwork(nn.Module):
         preds = self.classify(similarites, support_set_y=support_set_y_one_hot)
 
         # calculate the accuracy
-        values, indices = preds.max(1)
+        values, indices = torch.max(preds, 0)
+
+        #target_y_one_hot = torch.zeros(support_set_y_one_hot.shape[1], requires_grad=False)
+        #target_y_one_hot[target_y] = 1
+
+        #print(target_y_one_hot)
         accuracy = torch.mean((indices.squeeze() == target_y).float())
+        #print(target_y)
         crossentropy_loss = F.cross_entropy(preds, target_y.long())
 
         return accuracy, crossentropy_loss

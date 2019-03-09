@@ -17,7 +17,7 @@ import numpy as np
 # Experiment setup
 batch_size = 10
 fce = True
-classes_per_set = 10
+classes_per_set = 5
 samples_per_class = 1
 channels = 1
 # Training setup
@@ -37,8 +37,8 @@ vocab_length = 27449
 # print(vocab_length)
 
 obj_oneShotBuilder = OmniglotBuilder(data)
-obj_oneShotBuilder.build_experiment(batch_size=batch_size, num_channels=1, lr=1e-3, vocab_length=vocab_length, classes_per_set=20,
-                                    samples_per_class=1, keep_prob=0.0, fce=True, optim="adam", weight_decay=0,
+obj_oneShotBuilder.build_experiment(batch_size=batch_size, num_channels=1, lr=1e-3, vocab_length=vocab_length, classes_per_set=classes_per_set,
+                                    samples_per_class=samples_per_class, keep_prob=0.5, fce=True, optim="adam", weight_decay=0,
                                     use_cuda=True)
 
 with tqdm.tqdm(total=total_train_batches) as pbar_e:
