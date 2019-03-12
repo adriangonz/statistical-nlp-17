@@ -11,6 +11,8 @@ TITLE_REGEX = re.compile(r'^ (= )+.+( =)+ \n$')
 
 BLANK_TOKEN = "<blank_token>"
 
+VOCAB_SIZE = 27465
+
 
 def read_wikitext_corpus(file_path):
     """

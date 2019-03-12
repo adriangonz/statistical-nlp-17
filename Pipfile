@@ -14,6 +14,9 @@ torch = "*"
 spacy = "*"
 pytest = "*"
 ipdb = "*"
+ignite = "*"
+pytorch-ignite = "*"
+scikit-learn = "*"
 
 [requires]
 python_version = "3.6"
