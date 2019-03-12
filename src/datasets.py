@@ -4,10 +4,9 @@ import numpy as np
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import Sampler
 
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 
 from .utils import sample_elements
-from .process import VOCAB_SIZE
 
 
 class EpisodesSampler(Sampler):
@@ -65,7 +64,7 @@ class EpisodesDataset(Dataset):
     by label and returns all the k example sentences.
     """
 
-    def __init__(self, file_path, k, vocab_size=VOCAB_SIZE):
+    def __init__(self, file_path, k):
         """
         Initialise the dataset with the file path where
         all the sentence encodings are stored.
@@ -77,17 +76,9 @@ class EpisodesDataset(Dataset):
             of shape [num_labels x num_examples x sen_length]
         k : int
             Number of examples per label.
-        vocab_size : int
-            Size of the vocabulary. Used to transform the values into one-hot
-            vectors.
         """
         self.X = np.load(file_path)
         self.k = k
-        self.vocab_size = vocab_size
-
-        possible_tokens = np.arange(self.vocab_size)
-        self.sentence_encoder = OneHotEncoder(
-            categories=[possible_tokens], sparse=False)
 
     def __getitem__(self, episode_indices):
         """
@@ -102,10 +93,10 @@ class EpisodesDataset(Dataset):
 
         Returns
         ---
-        support_set : torch.Tensor[N x k x sen_length x vocab_size]
+        support_set : torch.Tensor[N x k x sen_length]
             Support set formed of the [k] example sentences of size
             [sen_length] each, for each of the [N] labels.
-        targets : torch.Tensor[N x sen_length x vocab_size]
+        targets : torch.Tensor[N x sen_length]
             Targets to predict for each of the N labels.
         labels : torch.Tensor[N]
             List of labels on the episode.
@@ -113,9 +104,9 @@ class EpisodesDataset(Dataset):
         N = len(episode_indices)
         sen_length = self.X.shape[2]
 
-        support_set = np.zeros((N, self.k, sen_length, self.vocab_size))
-        targets = np.zeros((N, sen_length, self.vocab_size))
-        labels = np.zeros(N)
+        support_set = np.zeros((N, self.k, sen_length), dtype=int)
+        targets = np.zeros((N, sen_length), dtype=int)
+        labels = np.zeros(N, dtype=int)
 
         for n, idx in enumerate(episode_indices):
             examples, target, label = self._get(idx)
@@ -163,31 +154,7 @@ class EpisodesDataset(Dataset):
         support_set = np.array(sampled_sentences[:-1])
         target = np.array(sampled_sentences[-1])
 
-        # Encode sentences as one-hot vectors
-        encoded_support_set = np.array(
-            [self._one_hot(sentence) for sentence in support_set])
-
-        encoded_target = self._one_hot(target)
-
-        return encoded_support_set, encoded_target, idx
-
-    def _one_hot(self, sentence):
-        """
-        Encodes a single sentence.
-
-        Parameters
-        ----
-        sentence : np.ndarray[sen_length]
-            Sentence to encode using integers to encode
-            each token.
-
-        Returns
-        ---
-        one_hot : np.ndarray[sen_length x vocab_size]
-            One hot encoding of the sentence.
-        """
-        reshaped = sentence.reshape(-1, 1)
-        return self.sentence_encoder.fit_transform(reshaped)
+        return support_set, target, idx
 
     def __len__(self):
         """
