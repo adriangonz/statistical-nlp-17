@@ -39,7 +39,7 @@ def main(args):
         data_set, sampler=episodes_sampler, batch_size=BATCH_SIZE)
 
     print("Initialising model...")
-    model = MatchingNetwork(fce=True)
+    model = MatchingNetwork(fce=True, processing_steps=3)
 
     print("Starting to train...")
     train(model, learning_rate=1e-3, train_loader=train_loader)

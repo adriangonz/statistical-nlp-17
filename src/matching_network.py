@@ -47,9 +47,9 @@ class DistanceNetwork(nn.Module):
 
 class FLayer(nn.Module):
     """
-    Layer to find embeddings on the target set.
+    Layer responsible of finding embeddings on the target set.
 
-    Referred to as `f(x)` on the paper.
+    Referred to in the paper as `f(x)` on the paper.
     """
 
     def __init__(self, encoding_size, processing_steps):
@@ -64,6 +64,7 @@ class FLayer(nn.Module):
             Number of processing steps for the LSTM.
             Referred to as `K` on the paper.
         """
+        super().__init__()
         self.lstm_cell = nn.LSTMCell(
             input_size=encoding_size, hidden_size=encoding_size)
         self.processing_steps = processing_steps
@@ -92,24 +93,30 @@ class FLayer(nn.Module):
         h_prev = torch.zeros_like(flattened_targets)
         c_prev = torch.zeros_like(flattened_targets)
         r_prev = torch.zeros_like(flattened_targets)
-        for step in self.processing_steps:
-            h_next, c_next = self.lstm_cell(flattened_targets, h_prev, c_prev)
+        for step in range(self.processing_steps):
+            # Add r from last step
+            h_prev += r_prev.view(-1, encoding_size)
+
+            # Recurr on LSTM
+            h_next, c_next = self.lstm_cell(flattened_targets,
+                                            (h_prev, c_prev))
             h_next += flattened_targets
 
             # Unflat previous hidden state to compute attention
             attention = self._attention(
                 h_prev.view(-1, T, encoding_size), support_embeddings)
 
-            # Compute next state and flatten
-            r_next = torch.sum(attention * support_embeddings, axis=(2, 3))
-            h_next = r_next.view(-1, encoding_size) + h_next
+            # Compute next value of r
+            r_next = torch.sum(attention * support_embeddings, dim=2)
+            r_next = r_next.view(-1, encoding_size)
 
             # Forward current state
             h_prev = h_next
             c_prev = c_next
+            r_prev = r_next
 
-            import ipdb
-            ipdb.set_trace()
+        # Take the last h_prev and un-flat
+        return h_prev.view(-1, T, encoding_size)
 
     def _attention(self, h, support_embeddings):
         """
@@ -129,8 +136,70 @@ class FLayer(nn.Module):
         attention : torch.Tensor[batch_size x N x k x encoding_size]
             Attention computed across pairs of targets and support sentences.
         """
+        # TODO: If something does not work, check this!!
         dot_products = torch.einsum('bte,bnke->bnke', h, support_embeddings)
-        return F.softmax(dot_products)
+        return F.softmax(dot_products, dim=3)
+
+
+class GLayer(nn.Module):
+    """
+    Layer responsible of finding embeddings of the support set.
+
+    Referred to in the paper as `g()`.
+    """
+
+    def __init__(self, encoding_size, fce):
+        """
+        Initialise the g()-layer.
+
+        Parameters
+        ---
+        encoding_size : int
+            Size of the sentence encodings.
+        fce : bool
+            Flag to decide if we should use Full Context Embeddings.
+        """
+        super().__init__()
+
+        self.fce_layer = None
+        if fce:
+            self.fce_layer = nn.LSTM(
+                input_size=encoding_size,
+                hidden_size=encoding_size // 2,
+                bidirectional=True,
+                batch_first=True)
+
+    def forward(self, support_encodings):
+        """
+        Find an embedding of the support set.
+
+        Parameters
+        ---
+        support_set : torch.Tensor[batch_size x N x k x encoding_size]
+            Support set containing [batch_size] episodes of [N] labels
+            with [k] examples each. The last dimension represents the
+            list of tokens in each sentence.
+
+        Returns
+        ---
+        embeddings : torch.Tensor[batch_size x N x k x encoding_size]
+            Embeddings.
+        """
+        if self.fce_layer is None:
+            return support_encodings
+
+        # Flatten encodings first so that the shape
+        # is [batch_size x (N*k) x encoding_size] and the
+        # support set entries are considered as a sequence
+        _, N, k, encoding_size = support_encodings.shape
+        flattened_encodings = support_encodings.view(-1, N * k, encoding_size)
+
+        # Run LSTM across the support set of each episode
+        flattened_fce_encodings, _ = self.fce_layer(flattened_encodings)
+
+        # Un-flat output
+        fce_encodings = flattened_fce_encodings.view(-1, N, k, encoding_size)
+        return fce_encodings
 
 
 class MatchingNetwork(nn.Module):
@@ -145,8 +214,7 @@ class MatchingNetwork(nn.Module):
         Parameters
         ---
         fce : bool
-            Flag to decide if we should use Full
-            Context Embeddings.
+            Flag to decide if we should use Full Context Embeddings.
         vocab_size : int
             Size of the vocabulary to do one-hot encodings.
         processing_steps : int
@@ -160,17 +228,9 @@ class MatchingNetwork(nn.Module):
         self.encoding_layer = nn.EmbeddingBag(
             num_embeddings=vocab_size, embedding_dim=encoding_size, mode='sum')
 
-        if fce:
-            # The hidden size will half the encoding,
-            # because the LSTM is bidirectional
-            self.g_layer = nn.LSTM(
-                input_size=encoding_size,
-                hidden_size=encoding_size // 2,
-                bidirectional=True,
-                batch_first=True)
-
-        self.processing_steps = processing_steps
-        self.f = FLayer(encoding_size=encoding_size, processing_steps=1)
+        self.g = GLayer(encoding_size, fce=fce)
+        self.f = FLayer(
+            encoding_size=encoding_size, processing_steps=processing_steps)
 
         #  self.dn = DistanceNetwork()
 
@@ -217,27 +277,6 @@ class MatchingNetwork(nn.Module):
 
         return encoded
 
-    def _g(self, support_encodings):
-        """
-        Find an embedding of the support set.
-
-        Parameters
-        ---
-        support_set : torch.Tensor[batch_size x N x k x encoding_size]
-            Support set containing [batch_size] episodes of [N] labels
-            with [k] examples each. The last dimension represents the
-            list of tokens in each sentence.
-
-        Returns
-        ---
-        embeddings : torch.Tensor[batch_size x N x k x encoding_size]
-            Embeddings.
-        """
-        if not self.fce:
-            return support_encodings
-
-        return self.g_layer(support_encodings)
-
     def forward(self, input_args):
         """
         Implementation of the forward pass of the main network.
@@ -258,17 +297,18 @@ class MatchingNetwork(nn.Module):
         """
         support_set, targets = input_args
 
-        # produce encodings for all entries
+        # Encode both sets
         support_encodings = self._encode(support_set)
         target_encodings = self._encode(targets)
 
-        support_embeddings = self._g(support_encodings)
-        f_embeddings = self.f(target_encodings, support_embeddings)
+        # Embed both sets using f() and g()
+        support_embeddings = self.g(support_encodings)
+        target_embeddings = self.f(target_encodings, support_embeddings)
 
+        import ipdb
+        ipdb.set_trace()
         # get similarities between support set embeddings and target
         # TODO: Fix dn
         #  similarites = self.dn(support_set=embeddings, input_image=targets)
 
-        import ipdb
-        ipdb.set_trace()
-        return f_embeddings
+        return target_embeddings
