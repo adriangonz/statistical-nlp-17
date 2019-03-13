@@ -11,7 +11,7 @@ from src.matching_network import MatchingNetwork
 from src.training import train
 from src.utils import train_test_split_tensors
 
-BATCH_SIZE = 32
+BATCH_SIZE = 8
 
 parser = ArgumentParser()
 parser.add_argument(
@@ -45,7 +45,7 @@ def main(args):
 
     # Split training further into train and valid
     X_train, X_valid, y_train, y_valid = train_test_split_tensors(
-        X_train, y_train, test_size=0.3)
+        X_train, y_train, test_size=0.1)
     train_set = EpisodesDataset(X_train, y_train, k=args.k)
     valid_set = EpisodesDataset(X_valid, y_valid, k=args.k)
 

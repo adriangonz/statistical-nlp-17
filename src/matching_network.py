@@ -4,7 +4,6 @@ from torch import nn
 from torch.nn import functional as F
 
 from .data import VOCAB_SIZE, PADDING_TOKEN_INDEX
-from .utils import to_one_hot
 
 
 class EncodingLayer(nn.Module):
@@ -332,7 +331,7 @@ class MatchingNetwork(nn.Module):
         ---
         attention : torch.Tensor[batch_size x T x N]
             Attention of each target to each label in the support set.
-        labels : torch.Tensor[batch_size x T]
+        labels : torch.Tensor[batch_size x N]
             Corresponding token of each label N in the vocabulary.
 
         Returns
@@ -340,12 +339,16 @@ class MatchingNetwork(nn.Module):
         logits : torch.Tensor[batch_size x T x vocab_size]
             Predicted probabilities for each target of each episode.
         """
-        # TODO: These label indices don't correspond to
-        # entries on the vocabulary!!
+        batch_size, T, N = attention.shape
+        logits = torch.zeros((batch_size, T, self.vocab_size))
 
-        # Get logits by transforming it to a one-hot of the full vocabulary
-        one_hot_labels = to_one_hot(labels, depth=self.vocab_size)
-        logits = torch.einsum('btn,btv->btv', attention, one_hot_labels)
+        # TODO: There must be a better way, but I'm too tired
+        for batch_idx in range(batch_size):
+            for t_idx in range(T):
+                for l_idx, label_token in enumerate(labels[batch_idx]):
+                    logits[batch_idx, t_idx, label_token] = attention[
+                        batch_idx, t_idx, l_idx]
+
         return logits
 
     def forward(self, input_args):
