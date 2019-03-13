@@ -94,3 +94,26 @@ As an example, to resample the entire dataset, we can just run:
 $ python -m bin.sample -N 9000 -k 10 wikitext-2/wiki.train.tokens data/train.csv
 $ python -m bin.sample -N 1000 -k 10 wikitext-2/wiki.test.tokens data/test.csv
 ```
+
+### Generating vocabulary
+
+To make things easy to replicate, we generate in advance the vocabulary over the
+training set and store it in a file, which can then be used later for training
+and testing. You can have a look at the format in `data/vocab.json`.
+
+To re-generate it, just run:
+
+```console
+$ python -m bin.vocab data/train.csv data/vocab.json
+```
+
+## Training
+
+There is a script in the `bin` package which can be used to train the model. The
+`N` and `k` parameters control the number of labels and examples we want per
+episode respectively. The other parameters refer to the pre-computed vocabulary
+and the training set.
+
+```console
+$ python -m bin.train -N 5 -k 2 data/vocab.json data/train.csv
+```

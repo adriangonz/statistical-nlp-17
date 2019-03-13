@@ -16,7 +16,7 @@ def main(args):
     vocab = generate_vocab(args.input)
 
     print("Storing vocab...")
-    store_vocab(vocab)
+    store_vocab(vocab, args.output)
 
 
 if __name__ == "__main__":
