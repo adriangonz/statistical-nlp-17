@@ -62,20 +62,25 @@ class EpisodesDataset(Dataset):
     by label and returns all the k example sentences.
     """
 
-    def __init__(self, file_path, k):
+    def __init__(self, X, y, k):
         """
         Initialise the dataset with the file path where
         all the sentence encodings are stored.
 
         Parameters
         ----
-        file_path : str
-            String pointing to the file path, which should contain a dataset
-            of shape [num_labels x num_examples x sen_length]
+        X : torch.Tensor[num_labels x num_examples x sen_length]
+            Example sentences from which we will extract both the support
+            and target sets.
+        y : torch.Tensor[num_labels]
+            Value in vocabulary of each of the sentences.
+        vocab : torchtext.Vocab
+            Vocabulary with all the corpus.
         k : int
             Number of examples per label.
         """
-        self.X = np.load(file_path)
+        self.X = X
+        self.y = y
         self.k = k
 
     def __getitem__(self, episode_indices):
@@ -102,9 +107,9 @@ class EpisodesDataset(Dataset):
         N = len(episode_indices)
         sen_length = self.X.shape[2]
 
-        support_set = np.zeros((N, self.k, sen_length), dtype=int)
-        targets = np.zeros((N, sen_length), dtype=int)
-        labels = np.zeros(N, dtype=int)
+        support_set = torch.zeros((N, self.k, sen_length), dtype=torch.long)
+        targets = torch.zeros((N, sen_length), dtype=torch.long)
+        labels = torch.zeros(N, dtype=torch.long)
 
         for n, idx in enumerate(episode_indices):
             examples, target, label = self._get(idx)
@@ -113,12 +118,7 @@ class EpisodesDataset(Dataset):
             targets[n] = target
             labels[n] = label
 
-        # Transform to torch.Tensor
-        tensor_support_set = torch.from_numpy(support_set)
-        tensor_targets = torch.from_numpy(targets)
-        tensor_labels = torch.from_numpy(labels)
-
-        return tensor_support_set, tensor_targets, tensor_labels
+        return support_set, targets, labels
 
     def _get(self, idx):
         """
@@ -136,7 +136,7 @@ class EpisodesDataset(Dataset):
         target : torch.Tensor[sen_length x vocab_size]
             Target to predict for the given label.
         label : int
-            Index of the label on the dataset.
+            Index of the label on the vocabulary.
         """
         sentences = self.X[idx]
 
@@ -144,10 +144,11 @@ class EpisodesDataset(Dataset):
         # plus an extra one for the target
         sampled_sentences = sample_elements(sentences, size=(self.k + 1))
 
-        support_set = np.array(sampled_sentences[:-1])
-        target = np.array(sampled_sentences[-1])
+        support_set = torch.stack(sampled_sentences[:-1])
+        target = sampled_sentences[-1]
+        label = self.y[idx]
 
-        return support_set, target, idx
+        return support_set, target, label
 
     def __len__(self):
         """
