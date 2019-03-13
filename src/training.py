@@ -8,23 +8,23 @@ from ignite.metrics import Accuracy, Loss
 LOG_INTERVAL = 10
 
 
-def _flatten_output(logits, labels):
+def _flatten_output(logits, target_labels):
     vocab_size = logits.shape[-1]
 
     flat_logits = logits.view(-1, vocab_size)
-    flat_labels = labels.view(-1)
+    flat_labels = target_labels.view(-1)
 
     return flat_logits, flat_labels
 
 
-def episodes_loss(logits, labels, **kwargs):
-    flat_logits, flat_labels = _flatten_output(logits, labels)
+def episodes_loss(logits, target_labels, **kwargs):
+    flat_logits, flat_labels = _flatten_output(logits, target_labels)
     return F.cross_entropy(flat_logits, flat_labels, **kwargs)
 
 
 def episodes_output_transform(output):
-    logits, labels = output
-    flat_logits, flat_labels = _flatten_output(logits, labels)
+    logits, target_labels = output
+    flat_logits, flat_labels = _flatten_output(logits, target_labels)
     return flat_logits, flat_labels
 
 
@@ -52,16 +52,16 @@ def log_validation_results(trainer, evaluator, valid_loader):
 
 
 def prepare_episodes_batch(batch, device=None, non_blocking=False):
-    support_set, targets, labels = batch
+    support_set, targets, labels, target_labels = batch
 
     inputs = (support_set, targets, labels)
-    outputs = labels
+    outputs = target_labels
 
     if device is not None:
-        outputs = labels.to(device=device, non_blocking=non_blocking)
         inputs = (support_set.to(device=device, non_blocking=non_blocking),
                   targets.to(device=device, non_blocking=non_blocking),
-                  outputs)
+                  labels.to(device=device, non_blocking=non_blocking))
+        outputs = target_labels.to(device=device, non_blocking=non_blocking)
 
     return inputs, outputs
 

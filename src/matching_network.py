@@ -55,8 +55,8 @@ class EncodingLayer(nn.Module):
             reshaped = sentences.view(-1, N * k, sen_length)
         else:
             # Assume 3D tensor
-            sen_length = sentences.shape[2]
             T = sentences.shape[1]
+            sen_length = sentences.shape[2]
 
         flattened = reshaped.reshape(-1, sen_length)
         encoded_flat = self.encoding_layer(flattened)
@@ -135,7 +135,7 @@ class FLayer(nn.Module):
                 h_prev.view(-1, T, encoding_size), support_embeddings)
 
             # Compute next value of r
-            r_next = torch.sum(attention * support_embeddings, dim=2)
+            r_next = torch.sum(attention * support_embeddings, dim=(1, 2))
             r_next = r_next.view(-1, encoding_size)
 
             # Forward current state
@@ -275,7 +275,7 @@ class MatchingNetwork(nn.Module):
             Similarity of each target to each example in the support set.
         """
         batch_size, N, k, _ = support_embeddings.shape
-        T = support_embeddings.shape[1]
+        T = target_embeddings.shape[1]
         similarities = torch.zeros(batch_size, T, N, k)
 
         # TODO: I know there is a better way to compute this

@@ -62,7 +62,7 @@ class EpisodesDataset(Dataset):
     by label and returns all the k example sentences.
     """
 
-    def __init__(self, X, y, k):
+    def __init__(self, X, y, k, num_targets=1):
         """
         Initialise the dataset with the file path where
         all the sentence encodings are stored.
@@ -78,10 +78,13 @@ class EpisodesDataset(Dataset):
             Vocabulary with all the corpus.
         k : int
             Number of examples per label.
+        num_targets : int
+            Number of targets per episode.
         """
         self.X = X
         self.y = y
         self.k = k
+        self.num_targets = num_targets
 
     def __getitem__(self, episode_indices):
         """
@@ -99,10 +102,12 @@ class EpisodesDataset(Dataset):
         support_set : torch.Tensor[N x k x sen_length]
             Support set formed of the [k] example sentences of size
             [sen_length] each, for each of the [N] labels.
-        targets : torch.Tensor[N x sen_length]
+        targets : torch.Tensor[T x sen_length]
             Targets to predict for each of the N labels.
         labels : torch.Tensor[N]
             List of labels on the episode.
+        target_labels : torch.Tensor[num_targets]
+            List of right labels of targets.
         """
         N = len(episode_indices)
         sen_length = self.X.shape[2]
@@ -118,7 +123,13 @@ class EpisodesDataset(Dataset):
             targets[n] = target
             labels[n] = label
 
-        return support_set, targets, labels
+        # Choose [num_targets] randomly
+        N = len(episode_indices)
+        target_indices = sample_elements(np.arange(N), size=self.num_targets)
+
+        targets = targets[target_indices]
+        target_labels = labels[target_indices]
+        return support_set, targets, labels, target_labels
 
     def _get(self, idx):
         """

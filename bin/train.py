@@ -11,7 +11,7 @@ from src.matching_network import MatchingNetwork
 from src.training import train
 from src.utils import train_test_split_tensors
 
-BATCH_SIZE = 8
+BATCH_SIZE = 20
 
 parser = ArgumentParser()
 parser.add_argument(
