@@ -13,6 +13,8 @@ BLANK_TOKEN = "<blank_token>"
 
 VOCAB_SIZE = 27465
 
+PADDING_TOKEN_INDEX = 1
+
 
 def read_wikitext_corpus(file_path):
     """

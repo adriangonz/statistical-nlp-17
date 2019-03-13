@@ -3,46 +3,75 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from .process import VOCAB_SIZE
+from .process import VOCAB_SIZE, PADDING_TOKEN_INDEX
+from .utils import to_one_hot
 
 
-class DistanceNetwork(nn.Module):
+class EncodingLayer(nn.Module):
     """
-    This model calculates the cosine distance between each of the support set
-    embeddings and the target embeddings.
+    Layer to encode a variable-length sentence as sum-pooling of a learned
+    embedding.
     """
 
-    def forward(self, support_set, targets):
+    def __init__(self, vocab_size, encoding_size):
         """
-        Forward layer of the distance network.
+        Initialises the encoding layer.
 
         Parameters
         ---
-        support_set : torch.Tensor[batch_size x N x k x emb_size]
-            Embedded support set.
-        targets : torch.Tensor[batch_size x T x emb_size]
-            Embedded set of targets to predict.
+        vocab_size : int
+            Size of the vocabulary to do one-hot encodings.
+        encoding_size : int
+            Target size of the encoding.
+        """
+        super().__init__()
+
+        self.encoding_layer = nn.Embedding(
+            num_embeddings=vocab_size,
+            embedding_dim=encoding_size,
+            padding_idx=PADDING_TOKEN_INDEX)
+
+    def forward(self, sentences):
+        """
+        Encode a set of sentences.
+
+        Parameters
+        ---
+        sentences : torch.Tensor[batch_size x (N x k | T) x sen_length]
+            Sentences to encode. The shapes can be variable.
 
         Returns
         ---
-        similarities : torch.Tensor[batch_size x T x N]
-            Similarities to each one of the labels.
+        encodings : torch.Tensor[batch_size x (N x k | T) x encoding_size]
         """
-        # TODO: Fix this, doesn't work with batches
-        # Also, it's not a network, should be just a generic distance function
-        # instead.
+        # Save original shape to reshape afterwards
+        N = k = T = sen_length = None
 
-        eps = 1e-10
-        similarities = []
-        for support_image in support_set:
-            sum_support = torch.sum(torch.pow(support_image, 2), 1)
-            support_manitude = sum_support.clamp(eps, float("inf")).rsqrt()
-            dot_product = input_image.unsqueeze(1).bmm(
-                support_image.unsqueeze(2)).squeeze()
-            cosine_similarity = dot_product * support_manitude
-            similarities.append(cosine_similarity)
-        similarities = torch.stack(similarities)
-        return similarities.t()
+        # Reshape into 3D Tensor and flatten
+        reshaped = sentences
+        if len(sentences.shape) == 4:
+            N = sentences.shape[1]
+            k = sentences.shape[2]
+            sen_length = sentences.shape[3]
+            reshaped = sentences.view(-1, N * k, sen_length)
+        else:
+            # Assume 3D tensor
+            sen_length = sentences.shape[2]
+            T = sentences.shape[1]
+
+        flattened = reshaped.reshape(-1, sen_length)
+        encoded_flat = self.encoding_layer(flattened)
+        pooled_flat = encoded_flat.sum(dim=1)
+
+        # Re-shape into original form (4D or 3D tensor)
+        enc_size = pooled_flat.shape[1]
+        if N is not None and k is not None:
+            encoded = pooled_flat.reshape(-1, N, k, enc_size)
+        else:
+            # Assume 3D tensor
+            encoded = pooled_flat.reshape(-1, T, enc_size)
+
+        return encoded
 
 
 class FLayer(nn.Module):
@@ -223,59 +252,101 @@ class MatchingNetwork(nn.Module):
         """
         super().__init__()
 
-        encoding_size = 64
+        self.encoding_size = 64
+        self.vocab_size = vocab_size
 
-        self.encoding_layer = nn.EmbeddingBag(
-            num_embeddings=vocab_size, embedding_dim=encoding_size, mode='sum')
+        self.encode = EncodingLayer(self.vocab_size, self.encoding_size)
+        self.g = GLayer(self.encoding_size, fce=fce)
+        self.f = FLayer(self.encoding_size, processing_steps=processing_steps)
 
-        self.g = GLayer(encoding_size, fce=fce)
-        self.f = FLayer(
-            encoding_size=encoding_size, processing_steps=processing_steps)
-
-        #  self.dn = DistanceNetwork()
-
-    def _encode(self, sentences):
+    def _similarity(self, support_embeddings, target_embeddings):
         """
-        Encode a set of sentences.
+        Takes a measure of similarity by using the cosine distance.
 
         Parameters
         ---
-        sentences : torch.Tensor[batch_size x (N x k | T) x sen_length]
-            Sentences to encode. The shapes can be variable.
+        support_embeddings : torch.Tensor[batch_size x N x k x encoding_size]
+            Embeddings of the support set.
+        target_embeddings : torch.Tensor[batch_size x T x encoding_size]
+            Embeddings of the target set.
 
         Returns
         ---
-        encodings : torch.Tensor[batch_size x (N x k | T) x encoding_size]
+        similarity : torch.Tensor[batch_size x T x N]
+            Similarity of each target to each example in the support set.
         """
-        # Save original shape to reshape afterwards
-        N = k = T = sen_length = None
+        batch_size, N, k, _ = support_embeddings.shape
+        T = support_embeddings.shape[1]
+        similarities = torch.zeros(batch_size, T, N, k)
 
-        # Reshape into 3D Tensor and flatten
-        reshaped = sentences
-        if len(sentences.shape) == 4:
-            N = sentences.shape[1]
-            k = sentences.shape[2]
-            sen_length = sentences.shape[3]
-            reshaped = sentences.view(-1, N * k, sen_length)
-        else:
-            # Assume 3D tensor
-            sen_length = sentences.shape[2]
-            T = sentences.shape[1]
+        # TODO: I know there is a better way to compute this
+        # but I can't think much right now
 
-        flattened = reshaped.reshape(-1, sen_length)
+        # Compute similarity for each triple target/label/example
+        for t_idx in range(T):
+            # Extract targets at postition t_idx
+            target_embeddings_t = target_embeddings[:, t_idx, :]
 
-        # TODO: Work out how to remove padding
-        encoded_flat = self.encoding_layer(flattened)
+            for n_idx in range(N):
+                for k_idx in range(k):
+                    # Extract support embedding for label n and
+                    # example k
+                    support_embeddings_nk = support_embeddings[:, n_idx,
+                                                               k_idx, :]
 
-        # Re-shape into original form (4D or 3D tensor)
-        enc_size = encoded_flat.shape[1]
-        if N is not None and k is not None:
-            encoded = encoded_flat.reshape(-1, N, k, enc_size)
-        else:
-            # Assume 3D tensor
-            encoded = encoded_flat.reshape(-1, T, enc_size)
+                    # Compute mean similarity with labels at n
+                    similarities[:, t_idx, n_idx, k_idx] = F.cosine_similarity(
+                        support_embeddings_nk, target_embeddings_t, dim=1)
 
-        return encoded
+        # NOTE: Taking the sum here is equivalent to multiplying
+        # by the large one-hot vector over the vocabulary
+        return similarities.sum(dim=3)
+
+    def _attention(self, support_embeddings, target_embeddings):
+        """
+        Compute attention to each example on the support set.
+
+        Parameters
+        ---
+        support_embeddings : torch.Tensor[batch_size x N x k x encoding_size]
+            Embeddings of the support set.
+        target_embeddings : torch.Tensor[batch_size x T x encoding_size]
+            Embeddings of the target set.
+
+        Returns
+        ---
+        attention : torch.Tensor[batch_size x T x N]
+            Attention of each target to each label in the support set.
+        """
+        similarities = self._similarity(support_embeddings, target_embeddings)
+
+        # Compute attention as a softmax over similarities
+        attention = F.softmax(similarities, dim=2)
+        return attention
+
+    def _to_logits(self, attention, labels):
+        """
+        Convert attention to logits over entire vocabulary.
+
+        Parameters
+        ---
+        attention : torch.Tensor[batch_size x T x N]
+            Attention of each target to each label in the support set.
+        labels : torch.Tensor[batch_size x T]
+            Corresponding token of each label N in the vocabulary.
+
+        Returns
+        ---
+        logits : torch.Tensor[batch_size x T x vocab_size]
+            Predicted probabilities for each target of each episode.
+        """
+        # TODO: These label indices don't correspond to
+        # entries on the vocabulary!!
+
+        # Get logits by transforming it to a one-hot of the full vocabulary
+        one_hot_labels = to_one_hot(labels, depth=self.vocab_size)
+        logits = torch.einsum('btn,btv->btv', attention, one_hot_labels)
+        return logits
 
     def forward(self, input_args):
         """
@@ -289,26 +360,27 @@ class MatchingNetwork(nn.Module):
             list of tokens in each sentence.
         targets : torch.Tensor[batch_size x T x sen_length]
             List of targets to predict.
+        labels : torch.Tensor[batch_size x N]
+            Corresponding token of each label N in the vocabulary.
 
         Returns
         ---
-        predictions : torch.Tensor[batch_size x N x k]
-            Predicted label for each example of each episode.
+        logits : torch.Tensor[batch_size x T x vocab_size]
+            Predicted probabilities for each target of each episode.
         """
-        support_set, targets = input_args
+        support_set, targets, labels = input_args
 
         # Encode both sets
-        support_encodings = self._encode(support_set)
-        target_encodings = self._encode(targets)
+        support_encodings = self.encode(support_set)
+        target_encodings = self.encode(targets)
 
         # Embed both sets using f() and g()
         support_embeddings = self.g(support_encodings)
         target_embeddings = self.f(target_encodings, support_embeddings)
 
-        import ipdb
-        ipdb.set_trace()
-        # get similarities between support set embeddings and target
-        # TODO: Fix dn
-        #  similarites = self.dn(support_set=embeddings, input_image=targets)
+        # Compute attention matrix between support and target embeddings
+        attention = self._attention(support_embeddings, target_embeddings)
 
-        return target_embeddings
+        # Convert attention to logits over the entire vocabulary
+        logits = self._to_logits(attention, labels)
+        return logits

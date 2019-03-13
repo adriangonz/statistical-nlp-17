@@ -4,8 +4,6 @@ import numpy as np
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import Sampler
 
-from sklearn.preprocessing import LabelEncoder
-
 from .utils import sample_elements
 
 
@@ -115,15 +113,10 @@ class EpisodesDataset(Dataset):
             targets[n] = target
             labels[n] = label
 
-        # Encode episode's label indices as 1-of-N
-        label_encoder = LabelEncoder()
-        label_encoder.fit(episode_indices)
-        encoded_labels = label_encoder.transform(labels)
-
         # Transform to torch.Tensor
         tensor_support_set = torch.from_numpy(support_set)
         tensor_targets = torch.from_numpy(targets)
-        tensor_labels = torch.from_numpy(encoded_labels)
+        tensor_labels = torch.from_numpy(labels)
 
         return tensor_support_set, tensor_targets, tensor_labels
 
