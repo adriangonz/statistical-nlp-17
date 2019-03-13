@@ -106,10 +106,11 @@ def read_data_set(file_path, vocab):
         fields=[('label', label), ('sentence', sentence)])
 
     sentences_tensor = sentence.process(data_set.sentence)
-    y = label.process(data_set.label).squeeze()
+    labels_tensor = label.process(data_set.label).squeeze()
 
     # Infer num_labels and group sentences by label
-    num_labels = y.unique().shape[0]
+    y = labels_tensor.unique(sorted=False)
+    num_labels = y.shape[0]
     sen_length = sentences_tensor.shape[-1]
     X = sentences_tensor.view(num_labels, -1, sen_length)
 
