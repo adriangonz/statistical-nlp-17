@@ -32,6 +32,7 @@ parser.add_argument("training_set", help="Path to the training set")
 def main(args):
     print("Initialising dataset...")
     data_set = EpisodesDataset(file_path=args.training_set, k=args.k)
+
     episodes_sampler = EpisodesSampler(data_set, N=args.N)
 
     print("Initialising dataloader...")
