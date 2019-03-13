@@ -8,6 +8,10 @@ from collections import defaultdict, Counter
 from torchtext.data import Field, TabularDataset
 from torchtext.vocab import Vocab
 
+VOCAB_SIZE = 27443
+
+PADDING_TOKEN_INDEX = 1
+
 
 def simple_tokenizer(text):
     """

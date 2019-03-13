@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from .process import VOCAB_SIZE, PADDING_TOKEN_INDEX
+from .data import VOCAB_SIZE, PADDING_TOKEN_INDEX
 from .utils import to_one_hot
 
 

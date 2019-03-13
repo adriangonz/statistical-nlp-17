@@ -18,6 +18,8 @@ def main(args):
     print("Storing vocab...")
     store_vocab(vocab, args.output)
 
+    print(f"Stored vocab of size {len(vocab)} at {args.output}")
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

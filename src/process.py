@@ -2,6 +2,7 @@ import re
 import spacy
 
 from spacy.tokens import Token
+from spacy.symbols import ORTH
 
 from .utils import sample_elements, getattrd
 
@@ -9,11 +10,9 @@ from .utils import sample_elements, getattrd
 # e.g. '= = Gameplay = ='
 TITLE_REGEX = re.compile(r'^ (= )+.+( =)+ \n$')
 
-BLANK_TOKEN = "<blank_token>"
-
-VOCAB_SIZE = 27465
-
-PADDING_TOKEN_INDEX = 1
+BLANK_TOKEN = u"<blank_token>"
+UNK_TOKEN = u"<unk>"
+SPECIAL_TOKENS = [BLANK_TOKEN, UNK_TOKEN]
 
 
 def read_wikitext_corpus(file_path):
@@ -45,6 +44,7 @@ def read_wikitext_corpus(file_path):
                 # ignore
                 continue
 
+            line = line.strip()
             if line != "":
                 # Don't return empty line
                 # from last iteration
@@ -87,6 +87,10 @@ class PTBTransformer(object):
         """
         for (index, token) in enumerate(doc):
             if token.is_punct:
+                continue
+
+            if token.orth_ in SPECIAL_TOKENS:
+                token._.as_ptb = token.orth_
                 continue
 
             # Lowercase
@@ -154,6 +158,10 @@ class EpisodesSampler(object):
 
                 # Extract actual text
                 text = self._get_text(token)
+                if text is None:
+                    # Not sure why, but we are falling
+                    # on this case now...
+                    continue
 
                 # If text has already been seen
                 # during this sentence
@@ -274,7 +282,21 @@ def is_label(token):
     # SYM, NUM or stop words
     invalid_pos = ['NUM', 'PUNCT', 'SYM', 'X', "SPACE"]
 
-    return token.pos_ not in invalid_pos and not token.is_stop
+    return (token.pos_ not in invalid_pos and not token.is_stop
+            and token.orth_ not in SPECIAL_TOKENS)
+
+
+def add_special_cases(tokenizer):
+    """
+    Adds special tokens to the tokenizer.
+
+    Parameters
+    ---
+    tokenizer : spacy.Tokenizer
+        Spacy's tokenizer.
+    """
+    for token in SPECIAL_TOKENS:
+        tokenizer.add_special_case(token, [{ORTH: token}])
 
 
 def process_wikitext_corpus(file_path):
@@ -294,6 +316,7 @@ def process_wikitext_corpus(file_path):
     nlp = spacy.load('en', disable=['lemmatizer', 'matcher', 'parser', 'ner'])
     nlp.add_pipe(nlp.create_pipe('sentencizer'), last=True)
     nlp.add_pipe(PTBTransformer(), last=True)
+    add_special_cases(nlp.tokenizer)
 
     sampler = EpisodesSampler(attr_name="_.as_ptb", is_label=is_label)
     nlp.add_pipe(sampler, last=True)
