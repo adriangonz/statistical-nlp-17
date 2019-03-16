@@ -122,6 +122,11 @@ class FLayer(nn.Module):
         c_prev = torch.zeros_like(flattened_targets)
         r_prev = torch.zeros_like(flattened_targets)
         for step in range(self.processing_steps):
+            # NOTE: The original paper concatenates both
+            # to form a new state as [h, r], however other
+            # implementations seem to just sum it, which
+            # some dimensionality issues not clarified on the
+            # paper.
             # Add r from last step
             h_prev += r_prev.view(-1, encoding_size)
 
@@ -134,8 +139,9 @@ class FLayer(nn.Module):
             attention = self._attention(
                 h_prev.view(-1, T, encoding_size), support_embeddings)
 
-            # Compute next value of r
-            r_next = torch.sum(attention * support_embeddings, dim=(1, 2))
+            # Compute next value of r and re-flat
+            r_next = torch.einsum('btnk,bnke->bte', attention,
+                                  support_embeddings)
             r_next = r_next.view(-1, encoding_size)
 
             # Forward current state
@@ -161,12 +167,14 @@ class FLayer(nn.Module):
 
         Returns
         ---
-        attention : torch.Tensor[batch_size x N x k x encoding_size]
+        attention : torch.Tensor[batch_size x T x N x k]
             Attention computed across pairs of targets and support sentences.
         """
-        # TODO: If something does not work, check this!!
-        dot_products = torch.einsum('bte,bnke->bnke', h, support_embeddings)
-        return F.softmax(dot_products, dim=3)
+        dot_products = torch.einsum('bte,bnke->btnk', h, support_embeddings)
+        _, T, N, k = dot_products.shape
+        flat_dot_products = dot_products.view(-1, T, N * k)
+        flat_softmax = F.softmax(flat_dot_products, dim=2)
+        return flat_softmax.view(-1, T, N, k)
 
 
 class GLayer(nn.Module):
