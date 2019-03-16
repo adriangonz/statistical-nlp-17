@@ -13,7 +13,7 @@ class EpisodesSampler(Sampler):
     to build a dataloader for meta-training and meta-testing.
     """
 
-    def __init__(self, data_set, N, shuffle=True):
+    def __init__(self, data_set, N, episodes_multiplier=1):
         """
         Initialise the episodes sampler.
 
@@ -23,13 +23,13 @@ class EpisodesSampler(Sampler):
             Dataset with all the data.
         N : int
             Size of each meta-* episode.
-        shuffle : bool
-            Should shuffle the combination of
-            goals we pick on each episode.
+        episodes_multiplier : int
+            Multiply the amount of episodes we iterate over,
+            so that variances on samples can be averaged out.
         """
         self.data_set = data_set
         self.N = N
-        self.shuffle = shuffle
+        self.episodes_multiplier = episodes_multiplier
 
     def __iter__(self):
         """
@@ -41,10 +41,13 @@ class EpisodesSampler(Sampler):
             Iterator over groups of indices of labels.
         """
         label_indices = np.arange(len(self.data_set))
-        episodes_indices = label_indices.reshape(self.__len__(), self.N)
-        if self.shuffle:
-            episodes_indices = np.random.choice(
-                label_indices, size=(self.__len__(), self.N))
+        actual_num_episodes = self._get_num_episodes()
+
+        episodes_indices = np.array([
+            np.random.choice(
+                label_indices, size=(actual_num_episodes, self.N))
+            for extra in range(self.episodes_multiplier)
+        ]).reshape(-1, self.N)
 
         return iter(episodes_indices)
 
@@ -59,6 +62,19 @@ class EpisodesSampler(Sampler):
             Total number of available meta-* episodes.
         """
         # Use floor division
+        num_episodes = self._get_num_episodes()
+        return self.episodes_multiplier * num_episodes
+
+    def _get_num_episodes(self):
+        """
+        Returns the actual number of episodes available (ignoring
+        [episodes_multiplier].
+
+        Returns
+        ---
+        int
+            Number of _original_ episodes.
+        """
         return len(self.data_set) // self.N
 
 
@@ -68,13 +84,7 @@ class EpisodesDataset(Dataset):
     by label and returns all the k example sentences.
     """
 
-    def __init__(self,
-                 X,
-                 y,
-                 N,
-                 k,
-                 num_targets=1,
-                 shuffle_between_episodes=True):
+    def __init__(self, X, y, k, num_targets=1):
         """
         Initialise the dataset with the file path where
         all the sentence encodings are stored.
@@ -86,8 +96,6 @@ class EpisodesDataset(Dataset):
             and target sets.
         y : torch.Tensor[num_labels]
             Value in vocabulary of each of the sentences.
-        N : int
-            Number of labels per episode.
         k : int
             Number of examples per label.
         num_targets : int
@@ -98,13 +106,8 @@ class EpisodesDataset(Dataset):
         """
         self.X = X
         self.y = y
-        self.N = N
         self.k = k
         self.num_targets = num_targets
-
-        self.shuffle_between_episodes = shuffle_between_episodes
-        self._fixed_target_indices = None
-        self._fixed_sentence_indices = None
 
     def __getitem__(self, episode_indices):
         """
@@ -129,13 +132,12 @@ class EpisodesDataset(Dataset):
         target_labels : torch.Tensor[num_targets]
             List of right labels of targets.
         """
-        self.N = len(episode_indices)
+        N = len(episode_indices)
         sen_length = self.X.shape[2]
 
-        support_set = torch.zeros((self.N, self.k, sen_length),
-                                  dtype=torch.long)
-        targets = torch.zeros((self.N, sen_length), dtype=torch.long)
-        labels = torch.zeros(self.N, dtype=torch.long)
+        support_set = torch.zeros((N, self.k, sen_length), dtype=torch.long)
+        targets = torch.zeros((N, sen_length), dtype=torch.long)
+        labels = torch.zeros(N, dtype=torch.long)
 
         for n, idx in enumerate(episode_indices):
             examples, target, label = self._get(idx)
@@ -145,31 +147,11 @@ class EpisodesDataset(Dataset):
             labels[n] = label
 
         # Choose [num_targets] randomly
-        target_indices = self._get_target_indices()
+        target_indices = sample_elements(np.arange(N), size=self.num_targets)
 
         targets = targets[target_indices]
         target_labels = labels[target_indices]
         return support_set, targets, labels, target_labels
-
-    def _get_target_indices(self):
-        """
-        Decide the targets of an episode. If we can't
-        shuffle between episodes, return previously computed
-        indices.
-
-        Returns
-        ---
-        torch.Tensor[num_targets]
-            Target indices.
-        """
-        possible_target_indices = np.arange(self.N)
-        if not self.shuffle_between_episodes:
-            if self._fixed_target_indices is None:
-                self._fixed_target_indices = sample_elements(
-                    possible_target_indices, size=self.num_targets)
-            return self._fixed_target_indices
-
-        return sample_elements(possible_target_indices, size=self.num_targets)
 
     def _get(self, idx):
         """
@@ -193,35 +175,13 @@ class EpisodesDataset(Dataset):
 
         # Sample k sentences for the support set
         # plus an extra one for the target
-        sampled_sentences_indices = self._get_sentences_indices()
-        sampled_sentences = sentences[sampled_sentences_indices]
+        sampled_sentences = sample_elements(sentences, size=(self.k + 1))
 
-        support_set = sampled_sentences[:-1]
+        support_set = torch.stack(sampled_sentences[:-1])
         target = sampled_sentences[-1]
         label = self.y[idx]
 
         return support_set, target, label
-
-    def _get_sentences_indices(self):
-        """
-        Decide the indices of the sentences. If we are not supposed
-        to shuffle between episodes, return the previously
-        computed list of indices.
-
-        Returns
-        ---
-        torch.Tensor[k + 1]
-            Indices to pick as sentences and possible target.
-        """
-        num_sentences = self.X.shape[1]
-        possible_indices = np.arange(num_sentences)
-        if not self.shuffle_between_episodes:
-            if self._fixed_sentence_indices is None:
-                self._fixed_sentence_indices = sample_elements(
-                    possible_indices, size=(self.k + 1))
-            return self._fixed_sentence_indices
-
-        return sample_elements(possible_indices, size=(self.k + 1))
 
     def __len__(self):
         """
