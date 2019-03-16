@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from similarity import Similarity
+from .similarity import Similarity
 from .data import VOCAB_SIZE, PADDING_TOKEN_INDEX
 
 
@@ -238,7 +238,8 @@ class MatchingNetwork(nn.Module):
                  name,
                  fce=False,
                  vocab_size=VOCAB_SIZE,
-                 processing_steps=1):
+                 processing_steps=1,
+                 distance_metric="poincare"):
         """
         Initialises the Matching Network.
 
@@ -265,7 +266,9 @@ class MatchingNetwork(nn.Module):
         self.g = GLayer(self.encoding_size, fce=fce)
         self.f = FLayer(self.encoding_size, processing_steps=processing_steps)
 
-    def _similarity(self, support_embeddings, target_embeddings, distance_metric = "cosine"):
+        self.distance_metric = distance_metric
+
+    def _similarity(self, support_embeddings, target_embeddings):
         """
         Takes a measure of similarity by using the cosine distance.
 
@@ -301,13 +304,13 @@ class MatchingNetwork(nn.Module):
                                                                k_idx, :]
 
                     # Compute mean similarity with labels at n
-                    if  distance_metric == "cosine":
+                    if  self.distance_metric == "cosine":
                         similarities[:, t_idx, n_idx, k_idx] = similarity.cosine_similarity( support_embeddings_nk, target_embeddings_t)
-                    elif distance_metric == "euclidean":
+                    elif self.distance_metric == "euclidean":
                         similarities[:, t_idx, n_idx, k_idx] = similarity.euclidean_similarity(support_embeddings_nk, target_embeddings_t)
-                    elif distance_metric == "minkowski":
+                    elif self.distance_metric == "minkowski":
                         similarities[:, t_idx, n_idx, k_idx] = similarity.minkowski_similarity(support_embeddings_nk, target_embeddings_t)
-                    elif distance_metric == "poincare":
+                    elif self.distance_metric == "poincare":
                         similarities[:, t_idx, n_idx, k_idx] = similarity.poincare_similarity(support_embeddings_nk, target_embeddings_t)
                     else:
                         pass
@@ -333,7 +336,7 @@ class MatchingNetwork(nn.Module):
         attention : torch.Tensor[batch_size x T x N]
             Attention of each target to each label in the support set.
         """
-        similarities = self._similarity(support_embeddings, target_embeddings, distance_metric = "poincare")
+        similarities = self._similarity(support_embeddings, target_embeddings)
 
         # Compute attention as a softmax over similarities
         attention = F.softmax(similarities, dim=2)
