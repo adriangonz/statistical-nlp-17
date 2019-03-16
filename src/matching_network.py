@@ -309,6 +309,8 @@ class MatchingNetwork(nn.Module):
                         similarities[:, t_idx, n_idx, k_idx] = similarity.minkowski_similarity(support_embeddings_nk, target_embeddings_t)
                     elif distance_metric == "poincare":
                         similarities[:, t_idx, n_idx, k_idx] = similarity.poincare_similarity(support_embeddings_nk, target_embeddings_t)
+                    else:
+                        pass
 
 
         # NOTE: Taking the sum here is equivalent to multiplying
