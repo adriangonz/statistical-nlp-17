@@ -37,6 +37,14 @@ parser.add_argument(
     type=int,
     help="Examples per label")
 parser.add_argument(
+    "-d",
+    "--distance-metric",
+    action="store",
+    dest="distance_metric",
+    type=str,
+    default='cosine',
+    help="Distance metric to be used")
+parser.add_argument(
     "-p",
     "--processing-steps",
     action="store",
@@ -66,12 +74,16 @@ def main(args):
     valid_set = EpisodesDataset(X_valid, y_valid, k=args.k)
 
     print("Initialising model...")
-    # TODO: Change names once we start tweaking distances and embeddings,
-    # the format is
     model_name = get_model_name(
-        distance='cosine', embeddings='vanilla', N=args.N, k=args.k)
+        distance=args.distance_metric,
+        embeddings='vanilla',
+        N=args.N,
+        k=args.k)
     model = MatchingNetwork(
-        model_name, fce=True, processing_steps=args.processing_steps)
+        model_name,
+        fce=True,
+        processing_steps=args.processing_steps,
+        distance_metric=args.distance_metric)
 
     print("Starting to train...")
     train_loader = _get_loader(train_set, args.N)
