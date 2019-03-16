@@ -22,7 +22,7 @@ def distance_to_similarity(distance_func):
     return _inner
 
 
-@distance_to_similarity
+#  @distance_to_similarity
 def euclidean_similarity(x, y):
     """
     Computes Euclidean similarity.

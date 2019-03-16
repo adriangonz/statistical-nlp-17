@@ -54,7 +54,7 @@ def main(args):
     print("Loading dataset...")
     vocab = read_vocab(args.vocab)
     X_test, y_test = read_data_set(args.test_set, vocab)
-    test_set = EpisodesDataset(X_test, y_test, k=k)
+    test_set = EpisodesDataset(X_test, y_test, N=N, k=k)
     sampler = EpisodesSampler(test_set, N=N)
     test_loader = DataLoader(test_set, sampler=sampler, batch_size=BATCH_SIZE)
 

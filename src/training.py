@@ -134,7 +134,6 @@ def train(model, learning_rate, train_loader, valid_loader, device=None):
     checkpoint = ModelCheckpoint(
         MODELS_PATH,
         model.name,
-        score_name="val_acc",
         score_function=model_score,
         n_saved=1,
         create_dir=True,

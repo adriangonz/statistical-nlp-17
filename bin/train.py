@@ -56,8 +56,8 @@ parser.add_argument("vocab", help="Path to the vocab JSON file")
 parser.add_argument("training_set", help="Path to the training CSV file")
 
 
-def _get_loader(data_set, N):
-    sampler = EpisodesSampler(data_set, N=N)
+def _get_loader(data_set, N, shuffle=True):
+    sampler = EpisodesSampler(data_set, N=N, shuffle=shuffle)
     loader = DataLoader(data_set, sampler=sampler, batch_size=BATCH_SIZE)
     return loader
 
@@ -70,8 +70,9 @@ def main(args):
     # Split training further into train and valid
     X_train, X_valid, y_train, y_valid = train_test_split_tensors(
         X_train, y_train, test_size=VAL_PERC)
-    train_set = EpisodesDataset(X_train, y_train, k=args.k)
-    valid_set = EpisodesDataset(X_valid, y_valid, k=args.k)
+    train_set = EpisodesDataset(X_train, y_train, N=args.N, k=args.k)
+    valid_set = EpisodesDataset(
+        X_valid, y_valid, N=args.N, k=args.k, shuffle_between_episodes=False)
 
     print("Initialising model...")
     model_name = get_model_name(
@@ -87,7 +88,7 @@ def main(args):
 
     print("Starting to train...")
     train_loader = _get_loader(train_set, args.N)
-    valid_loader = _get_loader(valid_set, args.N)
+    valid_loader = _get_loader(valid_set, args.N, shuffle=False)
     train(
         model,
         learning_rate=LEARNING_RATE,
