@@ -88,7 +88,7 @@ def main(args):
 
     print("Starting to train...")
     train_loader = _get_loader(train_set, args.N)
-    valid_loader = _get_loader(valid_set, args.N, episodes_multiplier=20)
+    valid_loader = _get_loader(valid_set, args.N, episodes_multiplier=30)
     train(
         model,
         learning_rate=LEARNING_RATE,

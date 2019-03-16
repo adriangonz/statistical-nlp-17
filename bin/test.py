@@ -55,7 +55,7 @@ def main(args):
     vocab = read_vocab(args.vocab)
     X_test, y_test = read_data_set(args.test_set, vocab)
     test_set = EpisodesDataset(X_test, y_test, k=k)
-    sampler = EpisodesSampler(test_set, N=N, episodes_multiplier=20)
+    sampler = EpisodesSampler(test_set, N=N, episodes_multiplier=30)
     test_loader = DataLoader(test_set, sampler=sampler, batch_size=BATCH_SIZE)
 
     print("Evaluating model...")
