@@ -15,12 +15,13 @@ def euclidean_similarity(x, y):
 
     Parameters
     ---
-    x, y : torch.Tensor
+    x, y : torch.Tensor[n x d]
+        List of [n] tensors of dimension [d].
 
     Returns
     ---
-    torch.Tensor
-        Euclidean similarity.
+    torch.Tensor[n]
+        Euclidean similarity for the [n] tensors.
     """
     x = F.normalize(x, dim=1)
     y = F.normalize(y, dim=1)
@@ -34,14 +35,15 @@ def minkowski_similarity(x, y, p_value=1.0):
 
     Parameters
     ---
-    x, y : torch.Tensor
+    x, y : torch.Tensor[n x d]
+        List of [n] tensors of dimension [d].
     p_value : float
         TODO: What is this?
 
     Returns
     ---
-    torch.Tensor
-        Minkowski similarity.
+    torch.Tensor[n]
+        Minkowski similarity for the [n] tensors.
     """
 
     x = F.normalize(x, dim=1)
@@ -59,12 +61,13 @@ def cosine_similarity(x, y):
 
     Parameters
     ---
-    x, y : torch.Tensor
+    x, y : torch.Tensor[n x d]
+        List of [n] tensors of dimension [d].
 
     Returns
     ---
-    torch.Tensor
-        Cosine similarity.
+    torch.Tensor[n]
+        Cosine similarity for the [n] tensors.
     """
     return F.cosine_similarity(x, y, dim=1)
 
@@ -75,12 +78,13 @@ def poincare_similarity(x, y):
 
     Parameters
     ---
-    x, y : torch.Tensor
+    x, y : torch.Tensor[n x d]
+        List of [n] tensors of dimension [d].
 
     Returns
     ---
-    torch.Tensor
-        Poincare similarity.
+    torch.Tensor[n]
+        Poincare similarity for the [n] tensors.
     """
     x = F.normalize(x, dim=1)
     y = F.normalize(y, dim=1)
