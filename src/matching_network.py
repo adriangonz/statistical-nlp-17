@@ -239,7 +239,7 @@ class MatchingNetwork(nn.Module):
                  fce=False,
                  vocab_size=VOCAB_SIZE,
                  processing_steps=1,
-                 distance_metric="poincare"):
+                 distance_metric="cosine"):
         """
         Initialises the Matching Network.
 
