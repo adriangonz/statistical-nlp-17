@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
 
 from src.matching_network import MatchingNetwork
-from src.evaluation import predict
+from src.evaluation import predict, save_predictions
 from src.data import read_vocab, read_data_set
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.utils import extract_model_parameters, get_model_name
@@ -60,8 +60,17 @@ def main(args):
 
     print("Evaluating model...")
     labels, predictions = predict(model, test_loader)
-    accuracy = accuracy_score(labels, predictions)
-    print(f"ACCURACY = {accuracy:.3f}")
+    np_labels = labels.numpy()
+    np_predictions = predictions.numpy()
+
+    print("Storing results...")
+    save_predictions(model, np_labels, np_predictions)
+
+    # Compute accuracy
+    accuracy = accuracy_score(np_labels, np_predictions)
+    print("==========================")
+    print(f"Accuracy = {accuracy:.3f}")
+    print("==========================")
 
 
 if __name__ == "__main__":

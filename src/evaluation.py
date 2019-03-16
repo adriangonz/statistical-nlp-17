@@ -2,7 +2,12 @@
 Utilities for evaluating models.
 """
 
+import os
 import torch
+import numpy as np
+
+RESULTS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "results")
 
 
 def predict(model, test_loader):
@@ -18,9 +23,9 @@ def predict(model, test_loader):
 
     Returns
     ---
-    labels : torch.Tensor[num_runs * num_episodes]
+    labels : torch.Tensor[num_episodes]
         Actual labels for each episode.
-    predictions : torch.Tensor[num_runs * num_episodes]
+    predictions : torch.Tensor[num_episodes]
         Predictions for each episode.
     """
     num_episodes = len(test_loader.sampler)
@@ -50,3 +55,22 @@ def predict(model, test_loader):
         prev_idx = next_idx
 
     return labels, predictions
+
+
+def save_predictions(model, labels, predictions):
+    """
+    Save predictions to a CSV. Note that this method
+    works with numpy!
+
+    Parameters
+    ---
+    model : torch.Model
+        Model used to make the predictions. Used for
+        generating the file name.
+    labels, predictions : np.array[num_episodes]
+        Set of labels and predictions.
+    """
+    file_name = f"{model.name}_predictions.npz"
+    file_path = os.path.join(RESULTS_PATH, file_name)
+
+    np.savez(file_path, labels=labels, predictions=predictions)
