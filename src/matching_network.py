@@ -201,7 +201,7 @@ class GLayer(nn.Module):
         if fce:
             self.fce_layer = nn.LSTM(
                 input_size=encoding_size,
-                hidden_size=encoding_size // 2,
+                hidden_size=encoding_size,
                 bidirectional=True,
                 batch_first=True)
 
@@ -230,11 +230,16 @@ class GLayer(nn.Module):
         _, N, k, encoding_size = support_encodings.shape
         flattened_encodings = support_encodings.view(-1, N * k, encoding_size)
 
-        # Run LSTM across the support set of each episode
+        # Run LSTM across the support set of each episode, and separate
+        # both directions (remember it's a BiLSTM layer)
         flattened_fce_encodings, _ = self.fce_layer(flattened_encodings)
+        dir_fce_encodings = flattened_fce_encodings.view(
+            -1, N, k, 2, encoding_size)
 
-        # Un-flat output
-        fce_encodings = flattened_fce_encodings.view(-1, N, k, encoding_size)
+        # Sum both directions and the oringinal encoding
+        # as per the paper
+        fce_encodings = dir_fce_encodings.sum(dim=3) + support_encodings
+
         return fce_encodings
 
 
