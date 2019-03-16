@@ -304,8 +304,7 @@ class MatchingNetwork(nn.Module):
         similarities = torch.zeros(batch_size, T, N, k)
         similarity_func = get_similarity_func(self.distance_metric)
 
-        # TODO: I know there is a better way to compute this
-        # but I can't think much right now
+        # TODO: Would be good to optimise this so that it's vectorised.
 
         # Compute similarity for each triple target/label/example
         for t_idx in range(T):
@@ -368,7 +367,7 @@ class MatchingNetwork(nn.Module):
         batch_size, T, N = attention.shape
         logits = torch.zeros((batch_size, T, self.vocab_size))
 
-        # TODO: There must be a better way, but I'm too tired
+        # TODO: Would be good to optimise this so that it's vectorised.
         for batch_idx in range(batch_size):
             for t_idx in range(T):
                 for l_idx, label_token in enumerate(labels[batch_idx]):

@@ -27,6 +27,6 @@ def test_cosine_similarity(x, y):
 
 def test_poincare_similarity(x, y):
     poincare = poincare_similarity(x, y)
-    expected = torch.Tensor([0, 100000000])
+    expected = torch.Tensor([-25.4526, 0.0000])
 
     assert torch.allclose(poincare, expected)

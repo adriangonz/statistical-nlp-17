@@ -6,7 +6,7 @@ from torch.nn import functional as F
 # similarity metric we need to take its inverse.
 # On cases where the distance may be zero,
 # EPS is used instead.
-EPS = 1e-8
+EPS = 1e-5
 
 
 def distance_to_similarity(distance_func):
@@ -40,10 +40,10 @@ def euclidean_similarity(x, y):
     x = F.normalize(x, dim=1)
     y = F.normalize(y, dim=1)
 
-    return torch.norm(x - y, p=2, dim=1)
+    return -torch.norm(x - y, p=2, dim=1)
 
 
-@distance_to_similarity
+#  @distance_to_similarity
 def minkowski_similarity(x, y, p=1.0):
     """
     Computes Minkowski distance between two tensors.
@@ -63,7 +63,7 @@ def minkowski_similarity(x, y, p=1.0):
     x = F.normalize(x, dim=1)
     y = F.normalize(y, dim=1)
 
-    return torch.norm(x - y, p=p, dim=1)
+    return -torch.norm(x - y, p=p, dim=1)
 
 
 def cosine_similarity(x, y):
@@ -83,7 +83,7 @@ def cosine_similarity(x, y):
     return F.cosine_similarity(x, y, dim=1)
 
 
-@distance_to_similarity
+#  @distance_to_similarity
 def poincare_similarity(x, y):
     """
     Returns Poincare similarity between two tensors.
@@ -98,14 +98,22 @@ def poincare_similarity(x, y):
     torch.Tensor[n]
         Poincare similarity for the [n] tensors.
     """
+    # Normalise so that max norm will be 1
     x = F.normalize(x, dim=1)
     y = F.normalize(y, dim=1)
-    diff_sq_norm = torch.pow(x - y, 2).sum(dim=1)
 
-    alpha = 1 - torch.pow(x, 2).sum(dim=1)
-    beta = 1 - torch.pow(y, 2).sum(dim=1)
+    # Clamp the norms on a fixed range, as
+    # they are gonna be used for division.
+    x_sq_norm = torch.clamp(torch.pow(x, 2).sum(dim=1), 0, 1 - EPS)
+    y_sq_norm = torch.clamp(torch.pow(x, 2).sum(dim=1), 0, 1 - EPS)
+
+    alpha = 1 - x_sq_norm
+    beta = 1 - y_sq_norm
+
+    diff_sq_norm = torch.pow(x - y, 2).sum(dim=1)
     inner_term = diff_sq_norm / (alpha * beta)
-    return arccosh(1 + 2 * inner_term)
+
+    return -arccosh(1 + 2 * inner_term)
 
 
 def arccosh(x):
