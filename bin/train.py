@@ -36,6 +36,14 @@ parser.add_argument(
     dest="k",
     type=int,
     help="Examples per label")
+parser.add_argument(
+    "-p",
+    "--processing-steps",
+    action="store",
+    dest="processing_steps",
+    type=int,
+    default=5,
+    help="Number of processing steps used for FCE")
 parser.add_argument("vocab", help="Path to the vocab JSON file")
 parser.add_argument("training_set", help="Path to the training CSV file")
 
@@ -62,7 +70,8 @@ def main(args):
     # the format is
     model_name = get_model_name(
         distance='cosine', embeddings='vanilla', N=args.N, k=args.k)
-    model = MatchingNetwork(model_name, fce=True, processing_steps=3)
+    model = MatchingNetwork(
+        model_name, fce=True, processing_steps=args.processing_steps)
 
     print("Starting to train...")
     train_loader = _get_loader(train_set, args.N)
