@@ -1,5 +1,4 @@
 import torch
-from torch import nn
 from torch.nn import functional as F
 
 
@@ -29,7 +28,6 @@ class Similarity():
 
     def cosine_similarity(self, x, y):
         """ return cosine similarity between two tensors"""
-
         return F.cosine_similarity(x, y, dim=1)
 
 

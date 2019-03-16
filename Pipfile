@@ -18,6 +18,8 @@ ignite = "*"
 pytorch-ignite = "*"
 scikit-learn = "*"
 torchtext = "*"
+pytorch = "==0.1.2"
+pytorch-text-utils = "*"
 
 [requires]
 python_version = "3.6"
