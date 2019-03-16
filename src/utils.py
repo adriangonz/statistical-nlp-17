@@ -95,3 +95,21 @@ def getattrd(obj, name):
     http://stackoverflow.com/questions/11975781
     """
     return reduce(getattr, name.split("."), obj)
+
+
+def get_model_name(distance='cosine', embeddings='vanilla', N=5, k=3):
+    """
+    Generates the model name combining its diff parameters.
+
+    Parameters
+    ---
+    distance : str
+        Distance metric used.
+    embeddings : str
+        Type of word embeddings used.
+    N : int
+        Number of labels per episode.
+    k : int
+        Number of examples per label on each episode.
+    """
+    return f"{distance}_{embeddings}_N={N}_k={k}"

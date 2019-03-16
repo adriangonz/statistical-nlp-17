@@ -234,12 +234,18 @@ class MatchingNetwork(nn.Module):
     Main model which uses all of the above.
     """
 
-    def __init__(self, fce=False, vocab_size=VOCAB_SIZE, processing_steps=1):
+    def __init__(self,
+                 name,
+                 fce=False,
+                 vocab_size=VOCAB_SIZE,
+                 processing_steps=1):
         """
         Initialises the Matching Network.
 
         Parameters
         ---
+        name : str
+            Name of the model. Used for storing checkpoints.
         fce : bool
             Flag to decide if we should use Full Context Embeddings.
         vocab_size : int
@@ -249,6 +255,8 @@ class MatchingNetwork(nn.Module):
             the target query.
         """
         super().__init__()
+
+        self.name = name
 
         self.encoding_size = 64
         self.vocab_size = vocab_size

@@ -9,9 +9,17 @@ from src.data import read_vocab, read_data_set
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.matching_network import MatchingNetwork
 from src.training import train
-from src.utils import train_test_split_tensors
+from src.utils import train_test_split_tensors, get_model_name
 
+# Matching Networks's paper specifies 20
+# as the batch size
 BATCH_SIZE = 20
+
+# Percentage of the training set used for
+# validation
+VAL_PERC = 0.1
+
+LEARNING_RATE = 1e-3
 
 parser = ArgumentParser()
 parser.add_argument(
@@ -28,6 +36,14 @@ parser.add_argument(
     dest="k",
     type=int,
     help="Examples per label")
+parser.add_argument(
+    "-p",
+    "--processing-steps",
+    action="store",
+    dest="processing_steps",
+    type=int,
+    default=5,
+    help="Number of processing steps used for FCE")
 parser.add_argument("vocab", help="Path to the vocab JSON file")
 parser.add_argument("training_set", help="Path to the training CSV file")
 
@@ -45,19 +61,24 @@ def main(args):
 
     # Split training further into train and valid
     X_train, X_valid, y_train, y_valid = train_test_split_tensors(
-        X_train, y_train, test_size=0.1)
+        X_train, y_train, test_size=VAL_PERC)
     train_set = EpisodesDataset(X_train, y_train, k=args.k)
     valid_set = EpisodesDataset(X_valid, y_valid, k=args.k)
 
     print("Initialising model...")
-    model = MatchingNetwork(fce=True, processing_steps=3)
+    # TODO: Change names once we start tweaking distances and embeddings,
+    # the format is
+    model_name = get_model_name(
+        distance='cosine', embeddings='vanilla', N=args.N, k=args.k)
+    model = MatchingNetwork(
+        model_name, fce=True, processing_steps=args.processing_steps)
 
     print("Starting to train...")
     train_loader = _get_loader(train_set, args.N)
     valid_loader = _get_loader(valid_set, args.N)
     train(
         model,
-        learning_rate=1e-3,
+        learning_rate=LEARNING_RATE,
         train_loader=train_loader,
         valid_loader=valid_loader)
 

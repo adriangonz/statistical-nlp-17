@@ -1,11 +1,22 @@
+import os
+
 from torch import optim
 from torch.nn import functional as F
 
 from ignite.engine import (Events, create_supervised_trainer,
                            create_supervised_evaluator)
 from ignite.metrics import Accuracy, Loss
+from ignite.handlers import EarlyStopping, ModelCheckpoint
 
-LOG_INTERVAL = 10
+MODELS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "models")
+
+# How often to log the loss between iterations
+LOG_INTERVAL = 20
+
+# We rely on early stopping, so we want
+# this to be high
+MAX_EPOCHS = 1000
 
 
 def _flatten_output(logits, target_labels):
@@ -34,7 +45,7 @@ def log_training_loss(trainer):
     iteration = trainer.state.iteration
 
     if iteration % LOG_INTERVAL == 0:
-        print(f"[TRAINING] Epoch {epoch} " f"- Loss: {loss:.2f}")
+        print(f"[TRAINING] Epoch {epoch} " f"- Loss: {loss:.3f}")
 
 
 def log_validation_results(trainer, evaluator, valid_loader):
@@ -47,8 +58,8 @@ def log_validation_results(trainer, evaluator, valid_loader):
     loss = metrics['loss']
 
     print(f"[VALIDATION] Epoch {epoch} "
-          f"- Avg accuracy: {accuracy:.2f} "
-          f"- Avg loss: {loss:.2f}")
+          f"- Avg accuracy: {accuracy:.3f} "
+          f"- Avg loss: {loss:.3f}")
 
 
 def prepare_episodes_batch(batch, device=None, non_blocking=False):
@@ -64,6 +75,11 @@ def prepare_episodes_batch(batch, device=None, non_blocking=False):
         outputs = target_labels.to(device=device, non_blocking=non_blocking)
 
     return inputs, outputs
+
+
+def model_score(engine):
+    acc = engine.state.metrics['accuracy']
+    return acc
 
 
 def train(model, learning_rate, train_loader, valid_loader, device=None):
@@ -111,6 +127,20 @@ def train(model, learning_rate, train_loader, valid_loader, device=None):
     trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results,
                               evaluator, valid_loader)
 
-    trainer.run(train_loader, max_epochs=100)
+    early_stopping = EarlyStopping(
+        patience=10, score_function=model_score, trainer=trainer)
+    evaluator.add_event_handler(Events.COMPLETED, early_stopping)
+
+    checkpoint = ModelCheckpoint(
+        MODELS_PATH,
+        model.name,
+        score_name="val_acc",
+        score_function=model_score,
+        n_saved=1,
+        create_dir=True,
+        require_empty=False)
+    evaluator.add_event_handler(Events.COMPLETED, checkpoint, {'model': model})
+
+    trainer.run(train_loader, max_epochs=MAX_EPOCHS)
 
     return model
