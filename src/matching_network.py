@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from .similarity import Similarity
+from .similarity import get_similarity_func
 from .data import VOCAB_SIZE, PADDING_TOKEN_INDEX
 
 
@@ -254,6 +254,8 @@ class MatchingNetwork(nn.Module):
         processing_steps : int
             How many processing steps to take when embedding
             the target query.
+        distance_metric : str
+            Distance metric to be used.
         """
         super().__init__()
 
@@ -287,7 +289,8 @@ class MatchingNetwork(nn.Module):
         batch_size, N, k, _ = support_embeddings.shape
         T = target_embeddings.shape[1]
         similarities = torch.zeros(batch_size, T, N, k)
-        similarity = Similarity()
+        similarity_func = get_similarity_func(self.distance_metric)
+
         # TODO: I know there is a better way to compute this
         # but I can't think much right now
 
@@ -304,17 +307,8 @@ class MatchingNetwork(nn.Module):
                                                                k_idx, :]
 
                     # Compute mean similarity with labels at n
-                    if  self.distance_metric == "cosine":
-                        similarities[:, t_idx, n_idx, k_idx] = similarity.cosine_similarity( support_embeddings_nk, target_embeddings_t)
-                    elif self.distance_metric == "euclidean":
-                        similarities[:, t_idx, n_idx, k_idx] = similarity.euclidean_similarity(support_embeddings_nk, target_embeddings_t)
-                    elif self.distance_metric == "minkowski":
-                        similarities[:, t_idx, n_idx, k_idx] = similarity.minkowski_similarity(support_embeddings_nk, target_embeddings_t)
-                    elif self.distance_metric == "poincare":
-                        similarities[:, t_idx, n_idx, k_idx] = similarity.poincare_similarity(support_embeddings_nk, target_embeddings_t)
-                    else:
-                        pass
-
+                    similarities[:, t_idx, n_idx, k_idx] = similarity_func(
+                        support_embeddings_nk, target_embeddings_t)
 
         # NOTE: Taking the sum here is equivalent to multiplying
         # by the large one-hot vector over the vocabulary

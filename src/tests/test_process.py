@@ -53,4 +53,4 @@ def test_episodes_sample(wiki_doc):
 def test_process_wikitext_corpus(wiki_file_path):
     sampler = process_wikitext_corpus(wiki_file_path)
 
-    assert len(sampler._sentences) == 854
+    assert len(sampler._sentences) == 852
