@@ -249,9 +249,9 @@ class MatchingNetwork(nn.Module):
 
     def __init__(self,
                  name,
-                 fce=False,
+                 fce=True,
                  vocab_size=VOCAB_SIZE,
-                 processing_steps=1,
+                 processing_steps=5,
                  distance_metric="cosine"):
         """
         Initialises the Matching Network.

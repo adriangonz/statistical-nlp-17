@@ -138,7 +138,8 @@ def train(model, learning_rate, train_loader, valid_loader, device=None):
         score_function=model_score,
         n_saved=1,
         create_dir=True,
-        require_empty=False)
+        require_empty=False,
+        save_as_state_dict=True)
     evaluator.add_event_handler(Events.COMPLETED, checkpoint, {'model': model})
 
     trainer.run(train_loader, max_epochs=MAX_EPOCHS)

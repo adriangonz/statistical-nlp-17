@@ -113,3 +113,52 @@ def get_model_name(distance='cosine', embeddings='vanilla', N=5, k=3):
         Number of examples per label on each episode.
     """
     return f"{distance}_{embeddings}_N={N}_k={k}"
+
+
+def extract_model_parameters(model_name):
+    """
+    Extracts the model parameters from a model name generated
+    with `get_model_name`.
+
+    Parameters
+    ---
+    model_name : str
+        Name of the model.
+    Returns
+    ---
+    distance : str
+        Distance metric used
+    embeddings : str
+        Type of word embedding used.
+    N : int
+        Number of labels per episode.
+    k : int
+        Number of examples per label on each episode.
+    """
+    model_fields = model_name.split("_")
+    distance = model_fields[0]
+    embeddings = model_fields[1]
+    N = _extract_int(model_fields[2])
+    k = _extract_int(model_fields[3])
+
+    return distance, embeddings, N, k
+
+
+def _extract_int(field):
+    """
+    Extracts the value of a string formatted as
+        [key]=[value]
+    (e.g. N=3)
+
+    Parameters
+    ---
+    field : str
+        String formatted as [key]=[value].
+
+    Returns
+    ---
+    value : int
+        Value of the field.
+    """
+    _, val = field.split("=")
+    return int(val)
