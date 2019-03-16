@@ -1,4 +1,6 @@
 import torch
+import functools
+
 from torch.nn import functional as F
 
 # Some of these metrics compute to distances
@@ -136,7 +138,8 @@ SIMILARITY_FUNCTIONS = {
     'cosine': cosine_similarity,
     'euclidean': euclidean_similarity,
     'poincare': poincare_similarity,
-    'minkowski': minkowski_similarity
+    'minkowski1': functools.partial(minkowski_similarity, p=1),
+    'minkowski3': functools.partial(minkowski_similarity, p=3),
 }
 
 
