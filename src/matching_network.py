@@ -394,6 +394,8 @@ class MatchingNetwork(nn.Module):
         """
         # Sum across labels
         attention = attention.sum(dim=3)
+        import ipdb
+        ipdb.set_trace()
         batch_size, T, N = attention.shape
         logits = torch.zeros((batch_size, T, self.vocab_size))
 
