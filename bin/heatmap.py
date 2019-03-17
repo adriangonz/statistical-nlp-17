@@ -4,9 +4,7 @@ import matplotlib.ticker as ticker
 import matplotlib.cm as cm
 import matplotlib as mpl
 import tkinter
-import os
 import matplotlib.pyplot as plt
-
 
 
 parser = ArgumentParser()
@@ -42,11 +40,12 @@ def main(args):
 	data = attention.squeeze(0)
 	fig, axis = plt.subplots() 
 	heatmap = axis.pcolor(data, cmap=plt.cm.Blues) 
-
+	
+	# had to do it manually
 	axis.set_yticks([0.5,1.5,2.5,3.5,4.5], minor=False)
 	axis.set_xticks([0.5,1.5,2.5], minor=False)
 	
-	#column_labels = support_set[1]
+	#same here
 	column_labels = [1,2,3]	
 	axis.invert_yaxis()
 	plt.xlabel('Example (k)')
@@ -56,7 +55,8 @@ def main(args):
 	plt.title('Attention map for examples in Support Set \n', fontsize=16)
 	fig.set_size_inches(11.03, 7.5)
 	plt.colorbar(heatmap)
-	plt.savefig('_heatmap.png', dpi=100)
+	file_name = (f"{args.attention}_heatmap.png")
+	plt.savefig(file_name, dpi=100)
 
 if __name__ == "__main__":
     args = parser.parse_args()
