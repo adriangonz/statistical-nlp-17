@@ -93,7 +93,7 @@ def plot_embeddings(model_name, support_embeddings, target_embeddings, labels):
     for label, examples_points in zip(labels, support_points):
         x = examples_points[:, 0]
         y = examples_points[:, 1]
-        ax.scatter(x, y, label=label)
+        ax.scatter(x, y, label=label, s=2**6, edgecolors='w', linewidths=1)
 
     # Plot target set point
     x = target_points[:, 0]
