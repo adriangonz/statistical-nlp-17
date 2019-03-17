@@ -80,6 +80,9 @@ class EncodingLayer(nn.Module):
 
             # Remove useless dimension
             pooled_flat = torch.squeeze(encoded_layers[11])
+
+            import ipdb
+            ipdb.set_trace()
         else:
             encoded_flat = self.encoding_layer(flattened)
             pooled_flat = encoded_flat.sum(dim=1)
@@ -394,8 +397,6 @@ class MatchingNetwork(nn.Module):
         """
         # Sum across labels
         attention = attention.sum(dim=3)
-        import ipdb
-        ipdb.set_trace()
         batch_size, T, N = attention.shape
         logits = torch.zeros((batch_size, T, self.vocab_size))
 
