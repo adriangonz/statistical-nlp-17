@@ -1,10 +1,13 @@
 import json
 import numpy as np
+import pandas as pd
 
 from collections import defaultdict, Counter
 
 from torchtext.vocab import Vocab
 from torchtext.data import Field, TabularDataset
+
+from pytorch_pretrained_bert import BertTokenizer
 
 
 class AbstractVocab(object):
@@ -86,8 +89,6 @@ class VanillaVocab(AbstractVocab):
 
         Parameters
         ---
-        vocab : torchtext.Vocab
-            Vocabulary with our corpus.
         file_path : str
             Path to the vocab state to write.
 
@@ -105,8 +106,6 @@ class VanillaVocab(AbstractVocab):
         ---
         file_path : str
             Path to the CSV file.
-        vocab : torchtext.Vocab
-            Vocabulary to use.
 
         Returns
         ---
@@ -216,3 +215,56 @@ class VanillaVocab(AbstractVocab):
 
         text.build_vocab(data_set.label, data_set.sentence)
         return text.vocab
+
+
+class BertVocab(AbstractVocab):
+    """
+    Implementation of mappings between text and tensors using Bert.
+    """
+
+    def __init__(self):
+        """
+        Initialise Bert's tokenizer.
+        """
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+    def to_tensors(self, file_path):
+        """
+        Reads the data set from one of the pre-processed CSVs composed
+        of columns `label` and `sentence`.
+
+        Parameters
+        ---
+        file_path : str
+            Path to the CSV file.
+
+        Returns
+        ---
+        X : torch.Tensor[num_labels x num_examples x sen_length]
+            Sentences on the dataset grouped by labels.
+        y : torch.Tensor[num_labels]
+            Labels for each group of sentences.
+        """
+        data_set = pd.read_csv(file_path)
+        sentences_tokens = self.tokenizer.tokenize(data_set['sentences'])
+        labels_tokens = self.tokenizer.tokenize(data_set['labels'])
+        raise NotImplementedError()
+
+
+VOCABS = {'vanilla': VanillaVocab, 'bert': BertVocab}
+
+
+def get_vocab(embeddings, *args, **kwargs):
+    """
+    Returns an initialised vocab, forwarding the extra args and kwargs.
+
+    Parameters
+    ---
+    embeddings : str
+        Embeddings to use. Can be one of the VOCABS keys.
+
+    Returns
+    ---
+    AbstractVocab
+    """
+    return VOCABS[embeddings](*args, **kwargs)

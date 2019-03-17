@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 
 from torch.utils.data import DataLoader
 
-from src.vocab import VanillaVocab
+from src.vocab import get_vocab
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.matching_network import MatchingNetwork
 from src.training import train
@@ -45,6 +45,14 @@ parser.add_argument(
     default='cosine',
     help="Distance metric to be used")
 parser.add_argument(
+    "-e",
+    "--embeddings",
+    action="store",
+    dest="embeddings",
+    type=str,
+    default='vanilla',
+    help="Type of embedding")
+parser.add_argument(
     "-p",
     "--processing-steps",
     action="store",
@@ -65,7 +73,7 @@ def _get_loader(data_set, N, episodes_multiplier=1):
 
 def main(args):
     print("Loading dataset...")
-    vocab = VanillaVocab(args.vocab)
+    vocab = get_vocab(args.embeddings, args.vocab)
     X_train, y_train = vocab.to_tensors(args.training_set)
 
     # Split training further into train and valid
@@ -77,7 +85,7 @@ def main(args):
     print("Initialising model...")
     model_name = get_model_name(
         distance=args.distance_metric,
-        embeddings='vanilla',
+        embeddings=args.embeddings,
         N=args.N,
         k=args.k)
     model = MatchingNetwork(
