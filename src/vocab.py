@@ -1,4 +1,5 @@
 import json
+import torch
 import numpy as np
 import pandas as pd
 
@@ -16,6 +17,8 @@ class AbstractVocab(object):
     and numbers.
     """
 
+    padding_token_index = 0
+
     def __len__(self):
         raise NotImplementedError()
 
@@ -31,6 +34,8 @@ class VanillaVocab(AbstractVocab):
     Allows to map between text and numbers using a simple tokenizer.
     """
 
+    padding_token_index = 1
+
     def __init__(self, file_path):
         """
         Initialise the vocabulary by reading it from a file path.
@@ -43,7 +48,6 @@ class VanillaVocab(AbstractVocab):
         super().__init__()
 
         self.vocab = self._read_vocab(file_path)
-        self.padding_token_index = 1
 
     def _read_vocab(self, file_path):
         """
@@ -130,14 +134,7 @@ class VanillaVocab(AbstractVocab):
         sentences_tensor = sentence.process(data_set.sentence)
         labels_tensor = label.process(data_set.label).squeeze()
 
-        # Infer num_labels and group sentences by label
-        num_labels = labels_tensor.unique().shape[0]
-        num_examples = labels_tensor.shape[0] // num_labels
-        y = labels_tensor[::num_examples]
-        sen_length = sentences_tensor.shape[-1]
-        X = sentences_tensor.view(num_labels, num_examples, sen_length)
-
-        return X, y
+        return _reshape_tensors(sentences_tensor, labels_tensor)
 
     @classmethod
     def _tokenizer(cls, text):
@@ -222,10 +219,14 @@ class BertVocab(AbstractVocab):
     Implementation of mappings between text and tensors using Bert.
     """
 
-    def __init__(self):
+    padding_token_index = 0
+
+    def __init__(self, *args, **kwargs):
         """
         Initialise Bert's tokenizer.
         """
+        super().__init__()
+
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
     def to_tensors(self, file_path):
@@ -246,9 +247,121 @@ class BertVocab(AbstractVocab):
             Labels for each group of sentences.
         """
         data_set = pd.read_csv(file_path)
-        sentences_tokens = self.tokenizer.tokenize(data_set['sentences'])
-        labels_tokens = self.tokenizer.tokenize(data_set['labels'])
-        raise NotImplementedError()
+
+        # Convert into tokens and find max sen length
+        sentences_tokens, labels_tokens, sen_length = self._to_tokens(data_set)
+
+        # Convert into tensors
+        num_elems = len(sentences_tokens)
+        sentences_tensor = torch.zeros((num_elems, sen_length))
+        labels_tensor = torch.zeros(num_elems)
+
+        for idx in range(num_elems):
+            tensor_sentence = self.tokenizer.convert_tokens_to_ids(
+                sentences_tokens[idx])
+            tensor_label = self.tokenizer.convert_tokens_to_ids(
+                labels_tokens[idx])
+
+            sentences_tensor[idx, :len(tensor_sentence)] = torch.Tensor(
+                tensor_sentence)
+            labels_tensor[idx] = tensor_label[0]
+
+        return _reshape_tensors(sentences_tensor, labels_tensor)
+
+    def _to_tokens(self, data_set):
+        """
+        Tokenize the dataset.
+
+        Parameters
+        ---
+        data_set : pd.DataFrame[label, sentence]
+            Dataset with two columns.
+
+        Returns
+        ---
+        sentences_tokens : list
+            List of tokenized sentences.
+        labels_tokens : list
+            List of tokenized labels.
+        sen_length : int
+            Maximum sentence length.
+        """
+        sentences_tokens = []
+        labels_tokens = []
+        sen_length = 0
+        for idx, row in data_set.iterrows():
+            token_sentence = self._tokenize(row['sentence'])
+            token_label = self._tokenize(row['label'])
+
+            if len(token_label) > 1:
+                continue
+                #  raise ValueError(f"Label '{row['label']}' was split "
+                #  f"into more than one tokens: "
+                #  f"{token_label}")
+
+            length = len(token_sentence)
+            if length > sen_length:
+                sen_length = length
+
+            sentences_tokens.append(token_sentence)
+            labels_tokens.append(token_label)
+
+        return sentences_tokens, labels_tokens, sen_length
+
+    def _tokenize(self, text):
+        """
+        Tokenize a text using Bert's tokenizer but processing it first to
+        replace:
+
+            - <unk> => [UNK]
+            - <blank_token> => [MASK]
+
+        Parameters
+        ---
+        text : str
+            Input string.
+
+        Returns
+        ---
+        list
+            List of tokens.
+        """
+        with_unk = text.replace('<unk>', '[UNK]')
+        with_mask = with_unk.replace('<blank_token>', '[MASK]')
+
+        return self.tokenizer.tokenize(with_mask)
+
+
+def _reshape_tensors(sentences_tensor, labels_tensor):
+    """
+    Reshape tensors to the [N x k x sen_lenth] structure.
+
+    Parameters
+    ---
+    sentences_tensor : torch.Tensor[num_elems x sen_length]
+        Flat tensor with all the sentences.
+    labels_tensor : torch.Tensor[num_elems]
+        Flat tensor with all the labels.
+
+    Returns
+    ---
+    X : torch.Tensor[num_labels x num_examples x sen_length]
+        Sentences on the dataset grouped by labels.
+    y : torch.Tensor[num_labels]
+        Labels for each group of sentences.
+    """
+    # Infer num_labels and num_examples by label
+    num_labels = labels_tensor.unique().shape[0]
+    num_examples = labels_tensor.shape[0] // num_labels
+    y = labels_tensor[::num_examples]
+
+    # More robust to potentially duplicated labels
+    num_labels = y.shape[0]
+
+    sen_length = sentences_tensor.shape[-1]
+    X = sentences_tensor.view(num_labels, num_examples, sen_length)
+
+    return X, y
 
 
 VOCABS = {'vanilla': VanillaVocab, 'bert': BertVocab}
