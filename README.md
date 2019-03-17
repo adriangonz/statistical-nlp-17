@@ -20,8 +20,7 @@ More details can be found in the associated paper.
 ## Getting Started
 
 To keep the environments as reproducible as possible, we will use `pipenv` to
-handle dependencies. Feel free to use `conda` or other tools which manage global
-deps as well!
+handle dependencies.
 
 To install `pipenv` just follow the instructions in https://pipenv.readthedocs.io/en/latest/.
 
