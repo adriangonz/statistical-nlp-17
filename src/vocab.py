@@ -302,6 +302,10 @@ class BertVocab(AbstractVocab):
             token_sentence = self._tokenize(row['sentence'])
             token_label = self._tokenize(row['label'])
 
+            # TODO: This is a shortcut to avoid dealing with
+            # situations where Bert's word-piece tokenizer
+            # splits a label into multiple tokens and thus
+            # multiple token ids to predict for a single input.
             if len(token_label) > 1:
                 continue
                 #  raise ValueError(f"Label '{row['label']}' was split "
