@@ -16,6 +16,10 @@ examples per label, etc.
 
 More details can be found in the associated paper.
 
+## Demo
+
+You can experiment with the model using the attached Colab Notebook.
+
 ## Getting Started
 
 To keep the environments as reproducible as possible, we will use `pipenv` to
