@@ -300,7 +300,7 @@ class MatchingNetwork(nn.Module):
         self.encoding_size = 64
         self.vocab_size = len(vocab)
 
-        self.encode = EncodingLayer(self.vocab_size, self.encoding_size)
+        self.encode = EncodingLayer(self.encoding_size, vocab)
         self.g = GLayer(self.encoding_size, fce=fce)
         self.f = FLayer(self.encoding_size, processing_steps=processing_steps)
 
