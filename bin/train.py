@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 
 from torch.utils.data import DataLoader
 
-from src.data import read_vocab, read_data_set
+from src.vocab import VanillaVocab
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.matching_network import MatchingNetwork
 from src.training import train
@@ -65,8 +65,8 @@ def _get_loader(data_set, N, episodes_multiplier=1):
 
 def main(args):
     print("Loading dataset...")
-    vocab = read_vocab(args.vocab)
-    X_train, y_train = read_data_set(args.training_set, vocab)
+    vocab = VanillaVocab(args.vocab)
+    X_train, y_train = vocab.to_tensors(args.training_set)
 
     # Split training further into train and valid
     X_train, X_valid, y_train, y_valid = train_test_split_tensors(

@@ -10,9 +10,9 @@ from sklearn.metrics import accuracy_score
 
 from torch.utils.data import DataLoader
 
+from src.vocab import VanillaVocab
 from src.matching_network import MatchingNetwork
 from src.evaluation import (predict, save_predictions, generate_episode_data)
-from src.data import read_vocab, read_data_set
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.utils import extract_model_parameters, get_model_name
 
@@ -66,8 +66,8 @@ def main(args):
     model, _, N, k = _load_model(args.model)
 
     print("Loading dataset...")
-    vocab = read_vocab(args.vocab)
-    X_test, y_test = read_data_set(args.test_set, vocab)
+    vocab = VanillaVocab(args.vocab)
+    X_test, y_test = vocab.to_tensors(args.test_set)
     test_set = EpisodesDataset(X_test, y_test, k=k)
     sampler = EpisodesSampler(test_set, N=N, episodes_multiplier=30)
     test_loader = DataLoader(test_set, sampler=sampler, batch_size=BATCH_SIZE)

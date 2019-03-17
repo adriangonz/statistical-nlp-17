@@ -6,8 +6,6 @@ import os
 import torch
 import numpy as np
 
-from .data import reverse_tensor
-
 RESULTS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "results")
 
@@ -174,11 +172,11 @@ def _episode_to_text(support_set, targets, labels, target_labels, vocab):
     # First, we need to flatten these...
     N, k, _ = support_set.shape
     flat_support_set = support_set.view(N * k, -1)
-    flat_support_set = reverse_tensor(flat_support_set, vocab)
+    flat_support_set = vocab.to_text(flat_support_set)
     support_set = flat_support_set.reshape(N, k)
 
-    targets = reverse_tensor(targets, vocab)
-    labels = reverse_tensor(labels, vocab)
-    target_labels = reverse_tensor(target_labels, vocab)
+    targets = vocab.to_text(targets)
+    labels = vocab.to_text(labels)
+    target_labels = vocab.to_text(target_labels)
 
     return support_set, targets, labels, target_labels
