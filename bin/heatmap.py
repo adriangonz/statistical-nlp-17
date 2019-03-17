@@ -1,60 +1,42 @@
-from argparse import ArgumentParser
+"""
+Command to generate an attention map over a target
+of the episode.
+"""
 import numpy as np
-import matplotlib.ticker as ticker
-import matplotlib.cm as cm
-import matplotlib as mpl
-import tkinter
-import matplotlib.pyplot as plt
+import os
 
+from argparse import ArgumentParser
+
+from src.utils import get_model_name, extract_model_parameters
+from src.figures import plot_attention_map, save_episode_text
 
 parser = ArgumentParser()
-parser.add_argument(
-    "-r",
-    "--attention",
-    action="store",
-    dest="attention",
-    type=str,
-    help="Path to the stored model's attentions")
-
+parser.add_argument("attention", help="Path to the stored model's attentions")
 
 
 def main(args):
-	results = np.load(args.attention)
-	attention = np.array(results['attention'])
-	labels = np.array(results['labels'])
-	support_set = np.array(results['support_set'])
-	target_labels = np.array(results['target_labels'])
-	targets = np.array(results['targets'])
-	print('Generating and saving the plot to results...')
+    print("Loading data...")
+    model_file_name = os.path.basename(args.attention)
+    d, e, N, k = extract_model_parameters(model_file_name)
+    model_name = get_model_name(d, e, N, k)
 
+    results = np.load(args.attention)
+    attention = results['attention']
+    labels = results['labels']
+    support_set = results['support_set']
+    target_labels = results['target_labels']
+    targets = results['targets']
 
+    print('Generating and saving the plot...')
+    plot_attention_map(model_name, attention, labels)
+    save_episode_text(
+        model_name,
+        support_set,
+        targets,
+        labels,
+        target_labels,
+        suffix='attention')
 
-	data = attention.squeeze(0)
-	fig, axis = plt.subplots() 
-	heatmap = axis.pcolor(data, cmap=plt.cm.Blues) 
-	
-	# had to do it manually
-	axis.set_yticks([0.5,1.5,2.5,3.5,4.5], minor=False)
-	axis.set_xticks([0.5,1.5,2.5], minor=False)
-	
-	#same here
-	column_labels = [1,2,3]	
-	axis.invert_yaxis()
-	plt.xlabel('Example (k)')
-	plt.ylabel('Label (N)')
-	axis.set_yticklabels(labels, minor=False)
-	axis.set_xticklabels(column_labels, minor=False)
-	plt.title('Attention map for examples in Support Set \n', fontsize=16)
-	fig.set_size_inches(11.03, 7.5)
-	plt.colorbar(heatmap)
-	# I wanted to focus on other plot, tomorrow I will fix folder
-	name = args.attention[:-14] 
-	name = name[8:]
-	file_name = (f"{name}_heatmap.png")	
-	plt.savefig(file_name, dpi=100)
-	#following command displays plot in terminal, but makes it impossible to carry on in pipenv,
-	#will fix it tomorrow
-	#plt.show()
 
 if __name__ == "__main__":
     args = parser.parse_args()
