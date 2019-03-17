@@ -102,21 +102,24 @@ class FLayer(nn.Module):
     Referred to in the paper as `f(x)` on the paper.
     """
 
-    def __init__(self, encoding_size, processing_steps):
+    def __init__(self, sentence_encoding_size, encoding_size,
+                 processing_steps):
         """
         Initialise the `f()` layer.
 
         Parameters
         ----
-        encoding_size : int
+        sentence_encoding_size : int
             Size of the sentence encodings.
+        encoding_size : int
+            Size of the embedded sentence through f().
         processing_steps : int
             Number of processing steps for the LSTM.
             Referred to as `K` on the paper.
         """
         super().__init__()
         self.lstm_cell = nn.LSTMCell(
-            input_size=encoding_size, hidden_size=encoding_size)
+            input_size=sentence_encoding_size, hidden_size=encoding_size)
         self.processing_steps = processing_steps
 
     def forward(self, targets, support_embeddings):
@@ -125,7 +128,7 @@ class FLayer(nn.Module):
 
         Parameters
         ----
-        targets : torch.Tensor[batch_size x T x encoding_size]
+        targets : torch.Tensor[batch_size x T x sentence_encoding_size]
             List of targets to predict.
         support_embeddings : torch.Tensor[batch_size x N x k x encoding_size]
             Embeddings of the support set.
@@ -137,8 +140,10 @@ class FLayer(nn.Module):
         # Flatten so that targets are 2D
         # (i.e. [(batch_size * T) x encoding_size])
         T = targets.shape[1]
-        encoding_size = targets.shape[2]
-        flattened_targets = targets.view(-1, encoding_size)
+        encoding_size = support_embeddings.shape[3]
+        sentence_encoding_size = targets.shape[2]
+
+        flattened_targets = targets.view(-1, sentence_encoding_size)
 
         h_prev = torch.zeros_like(flattened_targets)
         c_prev = torch.zeros_like(flattened_targets)
@@ -206,14 +211,16 @@ class GLayer(nn.Module):
     Referred to in the paper as `g()`.
     """
 
-    def __init__(self, encoding_size, fce):
+    def __init__(self, sentence_encoding_size, encoding_size, fce):
         """
         Initialise the g()-layer.
 
         Parameters
         ---
-        encoding_size : int
+        sentence_encoding_size : int
             Size of the sentence encodings.
+        encoding_size : int
+            Size of the embedded sentence through g().
         fce : bool
             Flag to decide if we should use Full Context Embeddings.
         """
@@ -222,7 +229,7 @@ class GLayer(nn.Module):
         self.fce_layer = None
         if fce:
             self.fce_layer = nn.LSTM(
-                input_size=encoding_size,
+                input_size=sentence_encoding_size,
                 hidden_size=encoding_size,
                 bidirectional=True,
                 batch_first=True)
@@ -233,7 +240,7 @@ class GLayer(nn.Module):
 
         Parameters
         ---
-        support_set : torch.Tensor[batch_size x N x k x encoding_size]
+        support_set : torch.Tensor[batch_size x N x k x sentence_encoding_size]
             Support set containing [batch_size] episodes of [N] labels
             with [k] examples each. The last dimension represents the
             list of tokens in each sentence.
@@ -297,12 +304,20 @@ class MatchingNetwork(nn.Module):
 
         self.name = name
 
+        self.sentence_encoding_size = 64
+        if vocab.name == 'bert':
+            self.sentence_encoding_size = 210
+
         self.encoding_size = 64
         self.vocab_size = len(vocab)
 
-        self.encode = EncodingLayer(self.encoding_size, vocab)
-        self.g = GLayer(self.encoding_size, fce=fce)
-        self.f = FLayer(self.encoding_size, processing_steps=processing_steps)
+        self.encode = EncodingLayer(self.sentence_encoding_size, vocab)
+        self.g = GLayer(
+            self.sentence_encoding_size, self.encoding_size, fce=fce)
+        self.f = FLayer(
+            self.sentence_encoding_size,
+            self.encoding_size,
+            processing_steps=processing_steps)
 
         self.distance_metric = distance_metric
 
