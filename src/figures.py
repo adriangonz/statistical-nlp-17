@@ -134,10 +134,10 @@ def plot_attention_map(model_name, attention, labels):
     # same here
     column_labels = [1, 2, 3]
     axis.invert_yaxis()
-    plt.xlabel('Example (k)', fontsize=20)
-    plt.ylabel('Label (N)', fontsize=20)
-    axis.set_yticklabels(labels, minor=False, fontsize=18)
-    axis.set_xticklabels(column_labels, minor=False, fontsize=18)
+    plt.xlabel('Example (k)', fontsize=22)
+    plt.ylabel('Label (N)', fontsize=22)
+    axis.set_yticklabels(labels, minor=False, fontsize=22)
+    axis.set_xticklabels(column_labels, minor=False, fontsize=22)
     fig.set_size_inches(11.03, 7.5)
     plt.colorbar(attention_map)
 
