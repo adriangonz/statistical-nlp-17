@@ -1,10 +1,18 @@
 import os
 import csv
+import seaborn as sns
+import numpy as np
+
+from sklearn.manifold import MDS
 
 from matplotlib import pyplot as plt
 
 FIGURES_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "figures")
+
+DPI = 300
+
+sns.set()
 
 
 def save_episode_text(model_name, support_set, targets, labels, target_labels,
@@ -48,6 +56,56 @@ def save_episode_text(model_name, support_set, targets, labels, target_labels,
             writer.writerow([label, target])
 
 
+def plot_embeddings(model_name, support_embeddings, target_embeddings, labels):
+    """
+    Plots the embeddings in 2D with t-SNE.
+
+    Parameters
+    ---
+    model_name : str
+        Model name that generated this plot.
+    support_embeddings : np.array[N x k x encoding_size]
+        Support set embeddings.
+    target_embeddings : np.array[T x encoding_size]
+        Target set embeddings.
+    labels : np.array[N]
+        Label texts.
+    """
+    N, k, encoding_size = support_embeddings.shape
+    T, _ = target_embeddings.shape
+    mds = MDS(n_components=2)
+
+    # Combine embeddings into a single matrix
+    flat_support_embeddings = support_embeddings.reshape(-1, encoding_size)
+    all_embeddings = np.concatenate(
+        [flat_support_embeddings, target_embeddings], axis=0)
+
+    # Compute 2D projections
+    all_points = mds.fit_transform(all_embeddings)
+    flat_support_points = all_points[:N * k]
+    support_points = flat_support_points.reshape(N, k, -1)
+    target_points = all_points[-T:]
+
+    # Plot support set points
+    fig, axis = plt.subplots()
+    palette = dict(zip(labels, sns.crayons.values()))
+    for label, examples_points in zip(labels, support_points):
+        x = examples_points[:, 0]
+        y = examples_points[:, 1]
+        hue = [label] * k
+        sns.scatterplot(x, y, ax=axis, hue=hue, legend='full', palette=palette)
+
+    # Plot target set point
+    x = target_points[:, 0]
+    y = target_points[:, 1]
+    markers = ['x'] * k
+    sns.scatterplot(x, y, markers=markers, ax=axis)
+
+    file_name = (f"{model_name}_embeddings.png")
+    file_path = os.path.join(FIGURES_PATH, file_name)
+    plt.savefig(file_path, dpi=DPI)
+
+
 def plot_attention_map(model_name, attention, labels):
     """
     Plots the attention map for a single episode and target.
@@ -83,4 +141,4 @@ def plot_attention_map(model_name, attention, labels):
 
     file_name = (f"{model_name}_heatmap.png")
     file_path = os.path.join(FIGURES_PATH, file_name)
-    plt.savefig(file_path, dpi=300)
+    plt.savefig(file_path, dpi=DPI)

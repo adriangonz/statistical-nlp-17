@@ -35,6 +35,13 @@ parser.add_argument(
     type=str,
     help="Path to the stored model snapshot")
 parser.add_argument(
+    "-p",
+    "--store-predictions",
+    action="store_true",
+    dest="predictions",
+    default=False,
+    help="If enabled, store predictions")
+parser.add_argument(
     "-a",
     "--generate-attention-map",
     action="store_true",
@@ -79,15 +86,19 @@ def main(args):
     np_predictions = predictions.numpy()
 
     print("Storing results...")
-    save_predictions(model, np_labels, np_predictions)
+    if args.predictions:
+        print("Storing predictions...")
+        save_predictions(model, np_labels, np_predictions)
 
+    # Get a single batch
+    batch = next(iter(test_loader))
     if args.attention:
         print("Generating attention map for a single episode...")
-        generate_attention_map(model, test_loader, vocab)
+        generate_attention_map(model, vocab, *batch)
 
     if args.embeddings:
         print("Generating embeddings for a single episode...")
-        generate_embeddings(model, test_loader, vocab)
+        generate_embeddings(model, vocab, *batch)
 
     # Compute accuracy
     accuracy = accuracy_score(np_labels, np_predictions)

@@ -78,7 +78,7 @@ def save_predictions(model, labels, predictions):
     np.savez(file_path, labels=labels, predictions=predictions)
 
 
-def generate_attention_map(model, test_loader, vocab):
+def generate_attention_map(model, vocab, *batch):
     """
     Generates the attention map for a single episode.
 
@@ -86,14 +86,13 @@ def generate_attention_map(model, test_loader, vocab):
     ---
     model : torch.Model
         Model used to make the predictions.
-    test_loader : torch.data.DataLoader
-        DataLoader over the test set.
     vocab : torchtext.Vocab
         Vocabulary to map back to text.
+    batch : tuple
+        Pre-sampled batch.
     """
     # Get a single batch
-    batch_support_set, batch_targets, batch_labels, batch_target_labels = next(
-        iter(test_loader))
+    batch_support_set, batch_targets, batch_labels, batch_target_labels = batch
 
     # Run manually through model...
     support_encodings = model.encode(batch_support_set)
@@ -124,7 +123,7 @@ def generate_attention_map(model, test_loader, vocab):
         target_labels=target_labels)
 
 
-def generate_embeddings(model, test_loader, vocab):
+def generate_embeddings(model, vocab, *batch):
     """
     Generates the embeddings `f()` and `g()` for a single episode.
 
@@ -132,14 +131,13 @@ def generate_embeddings(model, test_loader, vocab):
     ---
     model : torch.Model
         Model used to make the predictions.
-    test_loader : torch.data.DataLoader
-        DataLoader over the test set.
     vocab : torchtext.Vocab
         Vocabulary to map back to text.
+    batch : tuple
+        Pre-sampled batch.
     """
     # Get a single batch
-    batch_support_set, batch_targets, batch_labels, batch_target_labels = next(
-        iter(test_loader))
+    batch_support_set, batch_targets, batch_labels, batch_target_labels = batch
 
     # Run manually through model...
     support_encodings = model.encode(batch_support_set)

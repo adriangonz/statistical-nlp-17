@@ -22,10 +22,10 @@ def main(args):
 
     results = np.load(args.attention)
     attention = results['attention']
-    labels = results['labels']
     support_set = results['support_set']
-    target_labels = results['target_labels']
     targets = results['targets']
+    labels = results['labels']
+    target_labels = results['target_labels']
 
     print('Generating and saving the plot...')
     plot_attention_map(model_name, attention, labels)
