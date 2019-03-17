@@ -47,10 +47,12 @@ def main(args):
 	plt.title('Attention map for examples in Support Set \n', fontsize=16)
 	fig.set_size_inches(11.03, 7.5)
 	plt.colorbar(heatmap)
-	name = args.attention[:-4] 
-	file_name = (f"{name}_heatmap.png")
-	plt.show()
+	name = args.attention[:-14] 
+	file_name = (f"{name}_heatmap.png")	
 	plt.savefig(file_name, dpi=100)
+	#following command displays plot in terminal, but makes it impossible to carry on in pipenv,
+	#will fix it tomorrow
+	#plt.show()
 
 if __name__ == "__main__":
     args = parser.parse_args()
