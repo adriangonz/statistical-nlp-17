@@ -1,8 +1,11 @@
 import torch
+
 from torch import nn
 from torch.nn import functional as F
+
+from pytorch_pretrained_bert import BertModel
+
 from .similarity import get_similarity_func
-from .data import VOCAB_SIZE, PADDING_TOKEN_INDEX
 
 
 class EncodingLayer(nn.Module):
@@ -11,23 +14,31 @@ class EncodingLayer(nn.Module):
     embedding.
     """
 
-    def __init__(self, vocab_size, encoding_size):
+    def __init__(self, encoding_size, vocab):
         """
         Initialises the encoding layer.
 
         Parameters
         ---
-        vocab_size : int
-            Size of the vocabulary to do one-hot encodings.
         encoding_size : int
             Target size of the encoding.
+        vocab : AbstractVocab
+            Vocabulary used for the encodings.
         """
         super().__init__()
 
-        self.encoding_layer = nn.Embedding(
-            num_embeddings=vocab_size,
-            embedding_dim=encoding_size,
-            padding_idx=PADDING_TOKEN_INDEX)
+        self.vocab_size = len(vocab)
+        self.padding_token_index = vocab.padding_token_index
+        self.embeddings = vocab.name
+
+        if self.embeddings == "bert":
+            self.encoding_layer = BertModel.from_pretrained(
+                'bert-base-uncased')
+        else:
+            self.encoding_layer = nn.Embedding(
+                num_embeddings=self.vocab_size,
+                embedding_dim=encoding_size,
+                padding_idx=self.padding_token_index)
 
     def forward(self, sentences):
         """
@@ -58,8 +69,20 @@ class EncodingLayer(nn.Module):
             sen_length = sentences.shape[2]
 
         flattened = reshaped.reshape(-1, sen_length)
-        encoded_flat = self.encoding_layer(flattened)
-        pooled_flat = encoded_flat.sum(dim=1)
+
+        if self.embeddings == "bert":
+            # We don't want to fine-tune BERT!
+            with torch.no_grad():
+                encoded_layers, _ = self.encoding_layer(flattened)
+
+            # We have a hidden states for each of the 12 layers
+            # in model bert-base-uncased
+
+            # Remove useless dimension
+            pooled_flat = torch.squeeze(encoded_layers[11])
+        else:
+            encoded_flat = self.encoding_layer(flattened)
+            pooled_flat = encoded_flat.sum(dim=1)
 
         # Re-shape into original form (4D or 3D tensor)
         enc_size = pooled_flat.shape[1]
@@ -249,8 +272,8 @@ class MatchingNetwork(nn.Module):
 
     def __init__(self,
                  name,
+                 vocab,
                  fce=True,
-                 vocab_size=VOCAB_SIZE,
                  processing_steps=5,
                  distance_metric="cosine"):
         """
@@ -260,10 +283,10 @@ class MatchingNetwork(nn.Module):
         ---
         name : str
             Name of the model. Used for storing checkpoints.
+        vocab : AbstractVocab
+            AbstractVocab object.
         fce : bool
             Flag to decide if we should use Full Context Embeddings.
-        vocab_size : int
-            Size of the vocabulary to do one-hot encodings.
         processing_steps : int
             How many processing steps to take when embedding
             the target query.
@@ -275,7 +298,7 @@ class MatchingNetwork(nn.Module):
         self.name = name
 
         self.encoding_size = 64
-        self.vocab_size = vocab_size
+        self.vocab_size = len(vocab)
 
         self.encode = EncodingLayer(self.vocab_size, self.encoding_size)
         self.g = GLayer(self.encoding_size, fce=fce)

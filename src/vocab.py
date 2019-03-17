@@ -17,6 +17,7 @@ class AbstractVocab(object):
     and numbers.
     """
 
+    name = ""
     padding_token_index = 0
 
     def __len__(self):
@@ -34,6 +35,7 @@ class VanillaVocab(AbstractVocab):
     Allows to map between text and numbers using a simple tokenizer.
     """
 
+    name = "vanilla"
     padding_token_index = 1
 
     def __init__(self, file_path):
@@ -217,6 +219,7 @@ class BertVocab(AbstractVocab):
     Implementation of mappings between text and tensors using Bert.
     """
 
+    name = "bert"
     padding_token_index = 0
 
     def __init__(self, *args, **kwargs):

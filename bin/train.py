@@ -90,6 +90,7 @@ def main(args):
         k=args.k)
     model = MatchingNetwork(
         model_name,
+        vocab,
         fce=True,
         processing_steps=args.processing_steps,
         distance_metric=args.distance_metric)
