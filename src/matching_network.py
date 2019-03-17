@@ -32,7 +32,8 @@ class EncodingLayer(nn.Module):
         self.embeddings = vocab.name
 
         if self.embeddings == "bert":
-            self.bert_layer = BertModel.from_pretrained('bert-base-uncased')
+            self.encoding_layer = BertModel.from_pretrained(
+                'bert-base-uncased')
         else:
             self.encoding_layer = nn.Embedding(
                 num_embeddings=self.vocab_size,
