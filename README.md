@@ -10,22 +10,20 @@ Processing module at UCL, formed by:
 
 This repository implements the Matching Networks architecture ([Vinyals et al.,
 2016](http://arxiv.org/abs/1606.04080)) in `pytorch` and applies it to a
-Language Modelling task.
-
-The architecture is flexible enough to allow easy experimentation with distance
-metrics, number of labels per episode, number of examples per label, etc.
+Language Modelling task. The architecture is flexible enough to allow easy
+experimentation with distance metrics, number of labels per episode, number of
+examples per label, etc.
 
 More details can be found in the associated paper.
 
 ## Getting Started
 
 To keep the environments as reproducible as possible, we will use `pipenv` to
-handle dependencies.
-
-To install `pipenv` just follow the instructions in https://pipenv.readthedocs.io/en/latest/.
+handle dependencies. To install it just follow the instructions in
+https://pipenv.readthedocs.io/en/latest/.
 
 The first time, to create the environment and install all required dependencies,
-just run
+just run:
 
 ```console
 $ pipenv install
@@ -35,7 +33,7 @@ This will create a `virtualenv` and will install all required dependencies.
 
 ### Installing new dependencies
 
-To add new dependencies just run
+To add new dependencies just run:
 
 ```console
 $ pipenv install numpy
@@ -63,9 +61,9 @@ Additionally, you can find the following folders:
 ## Tests
 
 We are using `pytest` for writing and running unit tests. You can see some
-examples on the `test/` folder.
+examples on the `/src/tests/` folder.
 
-To run all tests, just run the following command.
+To run all tests, just run the following command:
 
 ```console
 $ pytest -s src/tests
@@ -73,7 +71,7 @@ $ pytest -s src/tests
 
 ## Dataset
 
-On the `data/` folder you can find a `train.csv` and `test.csv` files, which
+On the `data/` folder you can find the `train.csv` and `test.csv` files, which
 contain each 9000 labels with 10 examples each and 1000 labels with 10 examples
 each respectively.
 
@@ -94,7 +92,7 @@ music,nowadays <blank_token> doesn't sound as before
 
 ### Sampling new pairs
 
-If you want to sample a new set pairs from the WikiText-2 dataset you can use
+If you want to sample a new set of pairs from the WikiText-2 dataset you can use
 the `bin.sample` script. For example, to resample the entire dataset, we could
 just run:
 
@@ -123,10 +121,10 @@ This command will store the vocabulary's state as a `JSON` file.
 
 ## Training
 
-Training of a new model can be performed using the `bin.train` script.
+Training of a new model can be performed using the `bin.train` script:
 
 ```console
-$ python -m bin.train -N 5 -k 2 -e euclidean data/vocab.json data/train.csv
+$ python -m bin.train -N 5 -k 2 -d euclidean data/vocab.json data/train.csv
 ```
 
 The `N` and `k` parameters control the number of labels and examples we want per
@@ -151,7 +149,7 @@ Accuracy on a test set for a given model's snapshot can be measured using the
 $ python -m bin.test -v data/vocab.json -m models/euclidean_vanilla_N\=5_k\=3_model_24.pth data/test.csv
 ```
 
-These command has extra flags which allow to:
+This command has extra flags which allow to:
 
 - `-p`: Store the predictions in the `results/` folder.
 - `-e`: Generate embeddings and attention for a single episode and store them in
