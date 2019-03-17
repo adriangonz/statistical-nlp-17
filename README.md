@@ -20,6 +20,8 @@ More details can be found in the associated paper.
 
 You can experiment with the model using the attached Colab Notebook.
 
+> [One_Shot_Learning_for_Language_Modelling.ipynb](https://github.com/adriangonz/statistical-nlp-17/blob/master/One_Shot_Learning_for_Language_Modelling.ipynb)
+
 ## Getting Started
 
 To keep the environments as reproducible as possible, we will use `pipenv` to
