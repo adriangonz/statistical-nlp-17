@@ -330,7 +330,8 @@ class MatchingNetwork(nn.Module):
         """
         batch_size, N, k, _ = support_embeddings.shape
         T = target_embeddings.shape[1]
-        similarities = torch.zeros(batch_size, T, N, k)
+        similarities = torch.zeros((batch_size, T, N, k),
+                                   device=support_embeddings.device)
         similarity_func = get_similarity_func(self.distance_metric)
 
         # TODO: Would be good to optimise this so that it's vectorised.
@@ -398,7 +399,8 @@ class MatchingNetwork(nn.Module):
         # Sum across labels
         attention = attention.sum(dim=3)
         batch_size, T, N = attention.shape
-        logits = torch.zeros((batch_size, T, self.vocab_size))
+        logits = torch.zeros((batch_size, T, self.vocab_size),
+                             device=attention.device)
 
         # TODO: Would be good to optimise this so that it's vectorised.
         for batch_idx in range(batch_size):
