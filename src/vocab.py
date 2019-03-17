@@ -163,8 +163,6 @@ class VanillaVocab(AbstractVocab):
         ----
         X : torch.Tensor[num_elements x sen_length]
             Sentences on the tensor.
-        vocab : torchtext.Vocab
-            Vocabulary to use.
 
         Returns
         ----
@@ -228,6 +226,17 @@ class BertVocab(AbstractVocab):
         super().__init__()
 
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+    def __len__(self):
+        """
+        Returns the length of Bert's vocabulary.
+
+        Returns
+        ---
+        int
+            Length of the vocabulary.
+        """
+        return len(self.tokenizer.vocab)
 
     def to_tensors(self, file_path):
         """
@@ -330,6 +339,36 @@ class BertVocab(AbstractVocab):
         with_mask = with_unk.replace('<blank_token>', '[MASK]')
 
         return self.tokenizer.tokenize(with_mask)
+
+    def to_text(self, X):
+        """
+        Reverses some numericalised tensor into text.
+
+        Parameters
+        ----
+        X : torch.Tensor[num_elements x sen_length]
+            Sentences on the tensor.
+
+        Returns
+        ----
+        sentences : np.array[num_elements]
+            Array of strings.
+        """
+        sentences = []
+        for sentence_tensor in X:
+            if len(sentence_tensor.shape) == 0:
+                # 0-D tensor
+                sentences.append(self.tokenizer.ids_to_tokens[sentence_tensor])
+                continue
+
+            sentence = [
+                self.tokenizer.ids_to_tokens[token_id]
+                for token_id in sentence_tensor
+                if token_id != self.padding_token_index
+            ]
+            sentences.append(' '.join(sentence))
+
+        return np.array(sentences)
 
 
 def _reshape_tensors(sentences_tensor, labels_tensor):
