@@ -93,14 +93,14 @@ def plot_embeddings(model_name, support_embeddings, target_embeddings, labels):
     for label, examples_points in zip(labels, support_points):
         x = examples_points[:, 0]
         y = examples_points[:, 1]
-        ax.scatter(x, y, label=label, s=2**6, edgecolors='w', linewidths=1)
+        ax.scatter(x, y, label=label, s=2**7, edgecolors='w', linewidths=1)
 
     # Plot target set point
     x = target_points[:, 0]
     y = target_points[:, 1]
     ax.scatter(x, y, s=2**8, marker='X')
 
-    ax.legend()
+    ax.legend(fontsize=12)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
 
@@ -134,10 +134,10 @@ def plot_attention_map(model_name, attention, labels):
     # same here
     column_labels = [1, 2, 3]
     axis.invert_yaxis()
-    plt.xlabel('Example (k)')
-    plt.ylabel('Label (N)')
-    axis.set_yticklabels(labels, minor=False)
-    axis.set_xticklabels(column_labels, minor=False)
+    plt.xlabel('Example (k)', fontsize=20)
+    plt.ylabel('Label (N)', fontsize=20)
+    axis.set_yticklabels(labels, minor=False, fontsize=18)
+    axis.set_xticklabels(column_labels, minor=False, fontsize=18)
     fig.set_size_inches(11.03, 7.5)
     plt.colorbar(attention_map)
 
