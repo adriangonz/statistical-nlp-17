@@ -7,16 +7,16 @@ from src.figures import plot_embeddings, save_episode_text
 from src.utils import extract_model_parameters, get_model_name
 
 parser = ArgumentParser()
-parser.add_argument("embeddings", help="Path to the stored model's embeddings")
+parser.add_argument("episode_data", help="Path to the stored episodes's data")
 
 
 def main(args):
     print("Loading data...")
-    model_file_name = os.path.basename(args.embeddings)
+    model_file_name = os.path.basename(args.episode_data)
     d, e, N, k = extract_model_parameters(model_file_name)
     model_name = get_model_name(d, e, N, k)
 
-    results = np.load(args.embeddings)
+    results = np.load(args.episode_data)
     support_embeddings = results['support_embeddings']
     target_embeddings = results['target_embeddings']
     support_set = results['support_set']

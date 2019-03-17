@@ -11,16 +11,16 @@ from src.utils import get_model_name, extract_model_parameters
 from src.figures import plot_attention_map, save_episode_text
 
 parser = ArgumentParser()
-parser.add_argument("attention", help="Path to the stored model's attentions")
+parser.add_argument("episode_data", help="Path to the stored episodes's data")
 
 
 def main(args):
     print("Loading data...")
-    model_file_name = os.path.basename(args.attention)
+    model_file_name = os.path.basename(args.episode_data)
     d, e, N, k = extract_model_parameters(model_file_name)
     model_name = get_model_name(d, e, N, k)
 
-    results = np.load(args.attention)
+    results = np.load(args.episode_data)
     attention = results['attention']
     support_set = results['support_set']
     targets = results['targets']

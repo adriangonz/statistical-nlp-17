@@ -11,8 +11,7 @@ from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
 
 from src.matching_network import MatchingNetwork
-from src.evaluation import (predict, save_predictions, generate_attention_map,
-                            generate_embeddings)
+from src.evaluation import (predict, save_predictions, generate_episode_data)
 from src.data import read_vocab, read_data_set
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.utils import extract_model_parameters, get_model_name
@@ -42,19 +41,12 @@ parser.add_argument(
     default=False,
     help="If enabled, store predictions")
 parser.add_argument(
-    "-a",
-    "--generate-attention-map",
+    "-e",
+    "--generate-episode-data",
     action="store_true",
     dest="attention",
     default=False,
-    help="If enabled, generate attention map")
-parser.add_argument(
-    "-e",
-    "--generate-embeddings",
-    action="store_true",
-    dest="embeddings",
-    default=False,
-    help="If enabled, generate embeddings")
+    help="If enabled, generate data for a single episode")
 parser.add_argument("test_set", help="Path to the test CSV file")
 
 
@@ -91,14 +83,9 @@ def main(args):
         save_predictions(model, np_labels, np_predictions)
 
     # Get a single batch
-    batch = next(iter(test_loader))
-    if args.attention:
-        print("Generating attention map for a single episode...")
-        generate_attention_map(model, vocab, *batch)
-
-    if args.embeddings:
-        print("Generating embeddings for a single episode...")
-        generate_embeddings(model, vocab, *batch)
+    if args.episode:
+        print("Generating data for a single episode...")
+        generate_episode_data(model, test_loader, vocab)
 
     # Compute accuracy
     accuracy = accuracy_score(np_labels, np_predictions)

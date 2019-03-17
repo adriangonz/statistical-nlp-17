@@ -122,7 +122,7 @@ def plot_attention_map(model_name, attention, labels):
     target_attention = attention[0]
 
     fig, axis = plt.subplots()
-    heatmap = axis.pcolor(target_attention, cmap=plt.cm.Blues)
+    attention_map = axis.pcolor(target_attention, cmap=plt.cm.Blues)
 
     # had to do it manually
     axis.set_yticks([0.5, 1.5, 2.5, 3.5, 4.5], minor=False)
@@ -137,8 +137,8 @@ def plot_attention_map(model_name, attention, labels):
     axis.set_xticklabels(column_labels, minor=False)
     plt.title('Attention map for examples in Support Set \n', fontsize=16)
     fig.set_size_inches(11.03, 7.5)
-    plt.colorbar(heatmap)
+    plt.colorbar(attention_map)
 
-    file_name = (f"{model_name}_heatmap.png")
+    file_name = (f"{model_name}_attention.png")
     file_path = os.path.join(FIGURES_PATH, file_name)
     plt.savefig(file_path, dpi=DPI)

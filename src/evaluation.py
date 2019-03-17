@@ -78,7 +78,7 @@ def save_predictions(model, labels, predictions):
     np.savez(file_path, labels=labels, predictions=predictions)
 
 
-def generate_attention_map(model, vocab, *batch):
+def generate_episode_data(model, test_loader, vocab):
     """
     Generates the attention map for a single episode.
 
@@ -86,12 +86,13 @@ def generate_attention_map(model, vocab, *batch):
     ---
     model : torch.Model
         Model used to make the predictions.
+    test_loader : torch.DataLoader
+        DataLoader to sample a single batch.
     vocab : torchtext.Vocab
         Vocabulary to map back to text.
-    batch : tuple
-        Pre-sampled batch.
     """
     # Get a single batch
+    batch = next(iter(test_loader))
     batch_support_set, batch_targets, batch_labels, batch_target_labels = batch
 
     # Run manually through model...
@@ -112,55 +113,11 @@ def generate_attention_map(model, vocab, *batch):
 
     # Save attention map
     attention = batch_attention[0].detach().numpy()
-    file_name = f"{model.name}_attention.npz"
+    file_name = f"{model.name}_episode.npz"
     file_path = os.path.join(RESULTS_PATH, file_name)
     np.savez(
         file_path,
         attention=attention,
-        support_set=support_set,
-        targets=targets,
-        labels=labels,
-        target_labels=target_labels)
-
-
-def generate_embeddings(model, vocab, *batch):
-    """
-    Generates the embeddings `f()` and `g()` for a single episode.
-
-    Parameters
-    ---
-    model : torch.Model
-        Model used to make the predictions.
-    vocab : torchtext.Vocab
-        Vocabulary to map back to text.
-    batch : tuple
-        Pre-sampled batch.
-    """
-    # Get a single batch
-    batch_support_set, batch_targets, batch_labels, batch_target_labels = batch
-
-    # Run manually through model...
-    support_encodings = model.encode(batch_support_set)
-    target_encodings = model.encode(batch_targets)
-
-    # Embed both sets using f() and g()
-    batch_support_embeddings = model.g(support_encodings)
-    batch_target_embeddings = model.f(target_encodings,
-                                      batch_support_embeddings)
-
-    # Convert back to text
-    support_set, targets, labels, target_labels = _episode_to_text(
-        batch_support_set[0], batch_targets[0], batch_labels[0],
-        batch_target_labels[0], vocab)
-
-    # Save embeddings
-    support_embeddings = batch_support_embeddings[0].detach().numpy()
-    target_embeddings = batch_target_embeddings[0].detach().numpy()
-
-    file_name = f"{model.name}_embeddings.npz"
-    file_path = os.path.join(RESULTS_PATH, file_name)
-    np.savez(
-        file_path,
         support_embeddings=support_embeddings,
         target_embeddings=target_embeddings,
         support_set=support_set,
