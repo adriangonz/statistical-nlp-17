@@ -2,6 +2,7 @@
 Methods and tools to work with the pre-processed CSVs.
 """
 import json
+import numpy as np
 
 from collections import defaultdict, Counter
 
@@ -119,6 +120,38 @@ def read_data_set(file_path, vocab):
     X = sentences_tensor.view(num_labels, -1, sen_length)
 
     return X, y
+
+
+def reverse_tensor(X, vocab):
+    """
+    Reverses some numericalised tensor into text.
+
+    Parameters
+    ----
+    X : torch.Tensor[num_elements x sen_length]
+        Sentences on the tensor.
+    vocab : torchtext.Vocab
+        Vocabulary to use.
+
+    Returns
+    ----
+    sentences : np.array[num_elements]
+        Array of strings.
+    """
+    sentences = []
+    for sentence_tensor in X:
+        if len(sentence_tensor.shape) == 0:
+            # 0-D tensor
+            sentences.append(vocab.itos[sentence_tensor])
+            continue
+
+        sentence = [
+            vocab.itos[token] for token in sentence_tensor
+            if token != PADDING_TOKEN_INDEX
+        ]
+        sentences.append(' '.join(sentence))
+
+    return np.array(sentences)
 
 
 def generate_vocab(file_path):

@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
 
 from src.matching_network import MatchingNetwork
-from src.evaluation import predict, save_predictions
+from src.evaluation import predict, save_predictions, generate_attention_map
 from src.data import read_vocab, read_data_set
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.utils import extract_model_parameters, get_model_name
@@ -65,6 +65,7 @@ def main(args):
 
     print("Storing results...")
     save_predictions(model, np_labels, np_predictions)
+    generate_attention_map(model, test_loader, vocab)
 
     # Compute accuracy
     accuracy = accuracy_score(np_labels, np_predictions)

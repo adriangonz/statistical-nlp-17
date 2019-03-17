@@ -296,7 +296,7 @@ class MatchingNetwork(nn.Module):
 
         Returns
         ---
-        similarity : torch.Tensor[batch_size x T x N]
+        similarity : torch.Tensor[batch_size x T x N x k]
             Similarity of each target to each example in the support set.
         """
         batch_size, N, k, _ = support_embeddings.shape
@@ -322,9 +322,7 @@ class MatchingNetwork(nn.Module):
                     similarities[:, t_idx, n_idx, k_idx] = similarity_func(
                         support_embeddings_nk, target_embeddings_t)
 
-        # NOTE: Taking the sum here is equivalent to multiplying
-        # by the large one-hot vector over the vocabulary
-        return similarities.sum(dim=3)
+        return similarities
 
     def _attention(self, support_embeddings, target_embeddings):
         """
@@ -339,13 +337,17 @@ class MatchingNetwork(nn.Module):
 
         Returns
         ---
-        attention : torch.Tensor[batch_size x T x N]
+        attention : torch.Tensor[batch_size x T x N x k]
             Attention of each target to each label in the support set.
         """
         similarities = self._similarity(support_embeddings, target_embeddings)
 
         # Compute attention as a softmax over similarities
-        attention = F.softmax(similarities, dim=2)
+        _, T, N, k = similarities.shape
+        flat_similarities = similarities.view(-1, T, N * k)
+        flat_attention = F.softmax(flat_similarities, dim=2)
+        attention = flat_attention.view(-1, T, N, k)
+
         return attention
 
     def _to_logits(self, attention, labels):
@@ -354,7 +356,7 @@ class MatchingNetwork(nn.Module):
 
         Parameters
         ---
-        attention : torch.Tensor[batch_size x T x N]
+        attention : torch.Tensor[batch_size x T x N x k]
             Attention of each target to each label in the support set.
         labels : torch.Tensor[batch_size x N]
             Corresponding token of each label N in the vocabulary.
@@ -364,6 +366,8 @@ class MatchingNetwork(nn.Module):
         logits : torch.Tensor[batch_size x T x vocab_size]
             Predicted probabilities for each target of each episode.
         """
+        # Sum across labels
+        attention = attention.sum(dim=3)
         batch_size, T, N = attention.shape
         logits = torch.zeros((batch_size, T, self.vocab_size))
 

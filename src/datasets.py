@@ -126,7 +126,7 @@ class EpisodesDataset(Dataset):
             Support set formed of the [k] example sentences of size
             [sen_length] each, for each of the [N] labels.
         targets : torch.Tensor[T x sen_length]
-            Targets to predict for each of the N labels.
+            Targets to predict for each of the [N] labels.
         labels : torch.Tensor[N]
             List of labels on the episode.
         target_labels : torch.Tensor[num_targets]
