@@ -135,7 +135,6 @@ def plot_attention_map(model_name, attention, labels):
     plt.ylabel('Label (N)')
     axis.set_yticklabels(labels, minor=False)
     axis.set_xticklabels(column_labels, minor=False)
-    plt.title('Attention map for examples in Support Set \n', fontsize=16)
     fig.set_size_inches(11.03, 7.5)
     plt.colorbar(attention_map)
 
