@@ -156,3 +156,8 @@ This command has extra flags which allow to:
   the `results/` folder.
 
 Some of the already generated data can be seen in the `results/` folder.
+
+## Repository
+
+This repository can be found in
+https://github.com/adriangonz/statistical-nlp-17.
