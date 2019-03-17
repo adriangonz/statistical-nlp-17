@@ -117,3 +117,12 @@ and the training set.
 ```console
 $ python -m bin.train -N 5 -k 2 data/vocab.json data/train.csv
 ```
+
+### Evaluation
+
+For the first part of evaluation of our project, there is a script  in the `bin` to obtain attention heat-map. The only required parameter refers to precompiled label/example attention file. 
+
+```console
+$ python -m bin.heatmap -r results/euclidean_vanilla_N=5_k=3_attention.npz
+```
+
