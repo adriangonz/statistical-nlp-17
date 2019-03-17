@@ -32,8 +32,10 @@ class EncodingLayer(nn.Module):
         self.embeddings = vocab.name
 
         if self.embeddings == "bert":
-            self.encoding_layer = BertModel.from_pretrained(
-                'bert-base-uncased')
+            bert_encoding_size = 768
+            self.bert_layer = BertModel.from_pretrained('bert-base-uncased')
+            self.encoding_layer = nn.Linear(
+                in_features=bert_encoding_size, out_features=encoding_size)
         else:
             self.encoding_layer = nn.Embedding(
                 num_embeddings=self.vocab_size,
@@ -73,7 +75,7 @@ class EncodingLayer(nn.Module):
         if self.embeddings == "bert":
             # We don't want to fine-tune BERT!
             with torch.no_grad():
-                encoded_layers, _ = self.encoding_layer(flattened)
+                encoded_layers, _ = self.bert_layer(flattened)
 
             # We have a hidden states for each of the 12 layers
             # in model bert-base-uncased
@@ -81,6 +83,9 @@ class EncodingLayer(nn.Module):
             # Remove useless dimension
             encoded_flat = torch.squeeze(encoded_layers[11])
             pooled_flat = encoded_flat.sum(dim=1)
+
+            # Reduce dimensionality to 64
+            pooled_flat = self.encoding_layer(pooled_flat)
         else:
             encoded_flat = self.encoding_layer(flattened)
             pooled_flat = encoded_flat.sum(dim=1)
@@ -299,9 +304,6 @@ class MatchingNetwork(nn.Module):
         self.name = name
 
         self.encoding_size = 64
-        if vocab.name == 'bert':
-            self.encoding_size = 210
-
         self.vocab_size = len(vocab)
 
         self.encode = EncodingLayer(self.encoding_size, vocab)
