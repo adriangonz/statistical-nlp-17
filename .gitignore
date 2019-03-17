@@ -259,3 +259,8 @@ TSWLatexianTemp*
 
 # standalone packages
 *.sta
+
+_linux
+codestyles
+.idea
+
