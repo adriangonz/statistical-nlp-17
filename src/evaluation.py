@@ -107,7 +107,7 @@ def generate_attention_map(model, test_loader, vocab):
     batch_attention = model._attention(support_embeddings, target_embeddings)
 
     # Extract elements of the first episode of the batch
-    attention = batch_attention[0]
+    attention = batch_attention[0].detach().numpy()
     support_set = batch_support_set[0]
     targets = batch_targets[0]
     labels = batch_labels[0]
