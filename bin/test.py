@@ -44,7 +44,7 @@ parser.add_argument(
     "-e",
     "--generate-episode-data",
     action="store_true",
-    dest="attention",
+    dest="episode",
     default=False,
     help="If enabled, generate data for a single episode")
 parser.add_argument("test_set", help="Path to the test CSV file")
@@ -85,7 +85,11 @@ def main(args):
     # Get a single batch
     if args.episode:
         print("Generating data for a single episode...")
-        generate_episode_data(model, test_loader, vocab)
+        correct = generate_episode_data(model, test_loader, vocab)
+        # Accuracy is not very high, so we want to make sure the label
+        # right
+        if not correct:
+            print("[WARNING] Predicted example was incorrect!")
 
     # Compute accuracy
     accuracy = accuracy_score(np_labels, np_predictions)

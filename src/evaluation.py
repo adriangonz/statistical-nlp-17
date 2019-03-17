@@ -90,6 +90,11 @@ def generate_episode_data(model, test_loader, vocab):
         DataLoader to sample a single batch.
     vocab : torchtext.Vocab
         Vocabulary to map back to text.
+
+    Returns
+    ---
+    bool
+        True if the chosen episode was predicted correctly.
     """
     # Get a single batch
     batch = next(iter(test_loader))
@@ -100,19 +105,29 @@ def generate_episode_data(model, test_loader, vocab):
     target_encodings = model.encode(batch_targets)
 
     # Embed both sets using f() and g()
-    support_embeddings = model.g(support_encodings)
-    target_embeddings = model.f(target_encodings, support_embeddings)
+    batch_support_embeddings = model.g(support_encodings)
+    batch_target_embeddings = model.f(target_encodings,
+                                      batch_support_embeddings)
 
     # Compute attention matrix between support and target embeddings
-    batch_attention = model._attention(support_embeddings, target_embeddings)
+    batch_attention = model._attention(batch_support_embeddings,
+                                       batch_target_embeddings)
 
     # Convert back to text
+    logits = model._to_logits(batch_attention, batch_labels)
+    predictions = logits.argmax(dim=2)
+
+    # Get an batch element predicted right
+    correct_predictions = (predictions == batch_target_labels).view(-1)
+    batch_idx = correct_predictions.view(-1).argmax()
     support_set, targets, labels, target_labels = _episode_to_text(
-        batch_support_set[0], batch_targets[0], batch_labels[0],
-        batch_target_labels[0], vocab)
+        batch_support_set[batch_idx], batch_targets[batch_idx],
+        batch_labels[batch_idx], batch_target_labels[batch_idx], vocab)
 
     # Save attention map
-    attention = batch_attention[0].detach().numpy()
+    attention = batch_attention[batch_idx].detach().numpy()
+    support_embeddings = batch_support_embeddings[batch_idx].detach().numpy()
+    target_embeddings = batch_target_embeddings[batch_idx].detach().numpy()
     file_name = f"{model.name}_episode.npz"
     file_path = os.path.join(RESULTS_PATH, file_name)
     np.savez(
@@ -124,6 +139,8 @@ def generate_episode_data(model, test_loader, vocab):
         targets=targets,
         labels=labels,
         target_labels=target_labels)
+
+    return correct_predictions[batch_idx] == 1
 
 
 def _episode_to_text(support_set, targets, labels, target_labels, vocab):
