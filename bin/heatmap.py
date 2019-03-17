@@ -25,16 +25,8 @@ def main(args):
 	support_set = np.array(results['support_set'])
 	target_labels = np.array(results['target_labels'])
 	targets = np.array(results['targets'])
-	print(attention)
-	print(labels)
-	print(support_set)
-	print(target_labels)
-	print(targets)
-	print(attention.shape)
-	print(labels.shape)
-	print(support_set.shape)
-	print(target_labels.shape)
-	print(targets.shape)
+	print('Generating and saving the plot to results...')
+
 
 
 	data = attention.squeeze(0)
@@ -55,7 +47,9 @@ def main(args):
 	plt.title('Attention map for examples in Support Set \n', fontsize=16)
 	fig.set_size_inches(11.03, 7.5)
 	plt.colorbar(heatmap)
-	file_name = (f"{args.attention}_heatmap.png")
+	name = args.attention[:-4] 
+	file_name = (f"{name}_heatmap.png")
+	plt.show()
 	plt.savefig(file_name, dpi=100)
 
 if __name__ == "__main__":
