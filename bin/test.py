@@ -11,7 +11,8 @@ from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
 
 from src.matching_network import MatchingNetwork
-from src.evaluation import predict, save_predictions, generate_attention_map
+from src.evaluation import (predict, save_predictions, generate_attention_map,
+                            generate_embeddings)
 from src.data import read_vocab, read_data_set
 from src.datasets import EpisodesSampler, EpisodesDataset
 from src.utils import extract_model_parameters, get_model_name
@@ -33,6 +34,20 @@ parser.add_argument(
     dest="model",
     type=str,
     help="Path to the stored model snapshot")
+parser.add_argument(
+    "-a",
+    "--generate-attention-map",
+    action="store_true",
+    dest="attention",
+    default=False,
+    help="If enabled, generate attention map")
+parser.add_argument(
+    "-e",
+    "--generate-embeddings",
+    action="store_true",
+    dest="embeddings",
+    default=False,
+    help="If enabled, generate embeddings")
 parser.add_argument("test_set", help="Path to the test CSV file")
 
 
@@ -65,7 +80,14 @@ def main(args):
 
     print("Storing results...")
     save_predictions(model, np_labels, np_predictions)
-    generate_attention_map(model, test_loader, vocab)
+
+    if args.attention:
+        print("Generating attention map for a single episode...")
+        generate_attention_map(model, test_loader, vocab)
+
+    if args.embeddings:
+        print("Generating embeddings for a single episode...")
+        generate_embeddings(model, test_loader, vocab)
 
     # Compute accuracy
     accuracy = accuracy_score(np_labels, np_predictions)
