@@ -86,20 +86,23 @@ def plot_embeddings(model_name, support_embeddings, target_embeddings, labels):
     support_points = flat_support_points.reshape(N, k, -1)
     target_points = all_points[-T:]
 
+    # Build plot
+    fig, ax = plt.subplots()
+
     # Plot support set points
-    fig, axis = plt.subplots()
-    palette = dict(zip(labels, sns.crayons.values()))
     for label, examples_points in zip(labels, support_points):
         x = examples_points[:, 0]
         y = examples_points[:, 1]
-        hue = [label] * k
-        sns.scatterplot(x, y, ax=axis, hue=hue, legend='full', palette=palette)
+        ax.scatter(x, y, label=label)
 
     # Plot target set point
     x = target_points[:, 0]
     y = target_points[:, 1]
-    markers = ['x'] * k
-    sns.scatterplot(x, y, markers=markers, ax=axis)
+    ax.scatter(x, y, s=2**8, marker='X')
+
+    ax.legend()
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
 
     file_name = (f"{model_name}_embeddings.png")
     file_path = os.path.join(FIGURES_PATH, file_name)
