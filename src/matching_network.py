@@ -79,10 +79,8 @@ class EncodingLayer(nn.Module):
             # in model bert-base-uncased
 
             # Remove useless dimension
-            pooled_flat = torch.squeeze(encoded_layers[11])
-
-            import ipdb
-            ipdb.set_trace()
+            encoded_flat = torch.squeeze(encoded_layers[11])
+            pooled_flat = encoded_flat.sum(dim=1)
         else:
             encoded_flat = self.encoding_layer(flattened)
             pooled_flat = encoded_flat.sum(dim=1)
