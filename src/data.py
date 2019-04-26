@@ -9,6 +9,9 @@ from collections import defaultdict, Counter
 from torchtext.data import Field, TabularDataset
 from torchtext.vocab import Vocab
 
+print(
+    "[WARNING] Don't use src.data anymore. Use the Vocab interfaces instead.")
+
 VOCAB_SIZE = 27443
 
 PADDING_TOKEN_INDEX = 1

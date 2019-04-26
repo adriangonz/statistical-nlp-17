@@ -18,6 +18,8 @@ scikit-learn = "*"
 torch = "*"
 pytorch-ignite = "*"
 torchtext = "*"
+pytorch-pretrained-bert = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.6"

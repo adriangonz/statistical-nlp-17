@@ -1,8 +1,11 @@
 import torch
+
 from torch import nn
 from torch.nn import functional as F
+
+from pytorch_pretrained_bert import BertModel
+
 from .similarity import get_similarity_func
-from .data import VOCAB_SIZE, PADDING_TOKEN_INDEX
 
 
 class EncodingLayer(nn.Module):
@@ -11,23 +14,33 @@ class EncodingLayer(nn.Module):
     embedding.
     """
 
-    def __init__(self, vocab_size, encoding_size):
+    def __init__(self, encoding_size, vocab):
         """
         Initialises the encoding layer.
 
         Parameters
         ---
-        vocab_size : int
-            Size of the vocabulary to do one-hot encodings.
         encoding_size : int
             Target size of the encoding.
+        vocab : AbstractVocab
+            Vocabulary used for the encodings.
         """
         super().__init__()
 
-        self.encoding_layer = nn.Embedding(
-            num_embeddings=vocab_size,
-            embedding_dim=encoding_size,
-            padding_idx=PADDING_TOKEN_INDEX)
+        self.vocab_size = len(vocab)
+        self.padding_token_index = vocab.padding_token_index
+        self.embeddings = vocab.name
+
+        if self.embeddings == "bert":
+            bert_encoding_size = 768
+            self.bert_layer = BertModel.from_pretrained('bert-base-uncased')
+            self.encoding_layer = nn.Linear(
+                in_features=bert_encoding_size, out_features=encoding_size)
+        else:
+            self.encoding_layer = nn.Embedding(
+                num_embeddings=self.vocab_size,
+                embedding_dim=encoding_size,
+                padding_idx=self.padding_token_index)
 
     def forward(self, sentences):
         """
@@ -58,8 +71,24 @@ class EncodingLayer(nn.Module):
             sen_length = sentences.shape[2]
 
         flattened = reshaped.reshape(-1, sen_length)
-        encoded_flat = self.encoding_layer(flattened)
-        pooled_flat = encoded_flat.sum(dim=1)
+
+        if self.embeddings == "bert":
+            # We don't want to fine-tune BERT!
+            with torch.no_grad():
+                encoded_layers, _ = self.bert_layer(flattened)
+
+            # We have a hidden states for each of the 12 layers
+            # in model bert-base-uncased
+
+            # Remove useless dimension
+            encoded_flat = torch.squeeze(encoded_layers[11])
+            pooled_flat = encoded_flat.sum(dim=1)
+
+            # Reduce dimensionality to 64
+            pooled_flat = self.encoding_layer(pooled_flat)
+        else:
+            encoded_flat = self.encoding_layer(flattened)
+            pooled_flat = encoded_flat.sum(dim=1)
 
         # Re-shape into original form (4D or 3D tensor)
         enc_size = pooled_flat.shape[1]
@@ -249,8 +278,8 @@ class MatchingNetwork(nn.Module):
 
     def __init__(self,
                  name,
+                 vocab,
                  fce=True,
-                 vocab_size=VOCAB_SIZE,
                  processing_steps=5,
                  distance_metric="cosine"):
         """
@@ -260,10 +289,10 @@ class MatchingNetwork(nn.Module):
         ---
         name : str
             Name of the model. Used for storing checkpoints.
+        vocab : AbstractVocab
+            AbstractVocab object.
         fce : bool
             Flag to decide if we should use Full Context Embeddings.
-        vocab_size : int
-            Size of the vocabulary to do one-hot encodings.
         processing_steps : int
             How many processing steps to take when embedding
             the target query.
@@ -275,9 +304,9 @@ class MatchingNetwork(nn.Module):
         self.name = name
 
         self.encoding_size = 64
-        self.vocab_size = vocab_size
+        self.vocab_size = len(vocab)
 
-        self.encode = EncodingLayer(self.vocab_size, self.encoding_size)
+        self.encode = EncodingLayer(self.encoding_size, vocab)
         self.g = GLayer(self.encoding_size, fce=fce)
         self.f = FLayer(self.encoding_size, processing_steps=processing_steps)
 
@@ -301,7 +330,8 @@ class MatchingNetwork(nn.Module):
         """
         batch_size, N, k, _ = support_embeddings.shape
         T = target_embeddings.shape[1]
-        similarities = torch.zeros(batch_size, T, N, k)
+        similarities = torch.zeros((batch_size, T, N, k),
+                                   device=support_embeddings.device)
         similarity_func = get_similarity_func(self.distance_metric)
 
         # TODO: Would be good to optimise this so that it's vectorised.
@@ -369,7 +399,8 @@ class MatchingNetwork(nn.Module):
         # Sum across labels
         attention = attention.sum(dim=3)
         batch_size, T, N = attention.shape
-        logits = torch.zeros((batch_size, T, self.vocab_size))
+        logits = torch.zeros((batch_size, T, self.vocab_size),
+                             device=attention.device)
 
         # TODO: Would be good to optimise this so that it's vectorised.
         for batch_idx in range(batch_size):
